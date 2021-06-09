@@ -1,6 +1,6 @@
-from .types import NetworkOptimizer
 import torch.optim as optimizer
-import torch.nn as nn
+
+from .types import NetworkOptimizer
 
 
 def get_torch_optimizer(params, optimizer_type, optimizer_args):

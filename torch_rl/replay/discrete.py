@@ -1,5 +1,6 @@
 import numpy as np
 
+
 class DiscreteReplayBuffer:
     def __init__(self, max_size, input_shape, randomized=False):
         self.mem_size = max_size
@@ -25,7 +26,7 @@ class DiscreteReplayBuffer:
 
     def sample_buffer(self, batch_size):
         max_mem = min(self.mem_cntr, self.mem_size)
-        
+
         if self.randomized:
             batch = np.random.choice(max_mem, batch_size, replace=False)
         else:

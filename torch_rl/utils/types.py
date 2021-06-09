@@ -1,5 +1,6 @@
 import enum
 
+
 class NetworkOptimizer(enum.Enum):
     ADAM = 1,
     ADAMAX = 2,

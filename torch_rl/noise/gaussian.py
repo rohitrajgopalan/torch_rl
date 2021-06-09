@@ -1,3 +1,6 @@
+import numpy as np
+
+
 class GaussianExploration:
     def __init__(self, action_space, max_sigma=1.0, min_sigma=1.0, decay_period=1000000):
         self.low  = action_space.low
