@@ -17,4 +17,4 @@ The intent is for this library to work with OpenAI Gym style environments <br />
 Setting up the library is simple as follows <br />
 1. Navigate to the root of the torch_rl directory on your local machine on the terminal<br />
 2. Run python setup.py sdist <br />
-3. Run python -m pip install dist/torch-rl-<current version>.tar.gz <br />
+3. Run python -m pip install dist/torch-rl-'current version'.tar.gz <br />
