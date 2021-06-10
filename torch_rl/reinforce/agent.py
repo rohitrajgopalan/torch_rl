@@ -6,9 +6,9 @@ from .network import Network
 
 class Agent:
     def __init__(self, gamma, n_actions, input_dims,
-                 fc1_dims, fc2_dims, optimizer_type, optimizer_args={}):
+                 fc1_dims, optimizer_type, optimizer_args={}):
         self.gamma = gamma
-        self.policy = Network(input_dims, n_actions, fc1_dims, fc2_dims, optimizer_type, optimizer_args)
+        self.policy = Network(input_dims, n_actions, fc1_dims, optimizer_type, optimizer_args)
         self.reward_memory = []
         self.log_prob_memory = []
         self.current_log_prob = 0.0

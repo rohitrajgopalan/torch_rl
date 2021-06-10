@@ -6,7 +6,7 @@ from torch_rl.replay.discrete import DiscreteReplayBuffer
 
 class Agent:
     def __init__(self, gamma, epsilon, n_actions, input_dims,
-                 mem_size, batch_size, fc1_dims, fc2_dims, optimizer_type, eps_min=0.01, eps_dec=5e-7,
+                 mem_size, batch_size, fc_dims, optimizer_type, eps_min=0.01, eps_dec=5e-7,
                  replace=1000, optimizer_args={}, randomized=False):
         self.gamma = gamma
         self.epsilon = epsilon
@@ -21,9 +21,9 @@ class Agent:
 
         self.memory = DiscreteReplayBuffer(mem_size, input_dims, randomized)
 
-        self.q_eval = Network(self.input_dims, self.n_actions, fc1_dims, fc2_dims, optimizer_type, optimizer_args)
+        self.q_eval = Network(self.input_dims, self.n_actions, fc_dims, optimizer_type, optimizer_args)
 
-        self.q_next = Network(self.input_dims, self.n_actions, fc1_dims, fc2_dims, optimizer_type, optimizer_args)
+        self.q_next = Network(self.input_dims, self.n_actions, fc_dims, optimizer_type, optimizer_args)
 
         self.loss_history = []
 
@@ -68,18 +68,24 @@ class Agent:
 
         states, actions, rewards, states_, dones = self.sample_memory()
 
+        indices = np.arange(self.batch_size)
+
         V_s, A_s = self.q_eval.forward(states)
         V_s_, A_s_ = self.q_next.forward(states_)
 
-        indices = np.arange(self.batch_size)
+        V_s_eval, A_s_eval = self.q_eval.forward(states_)
 
         q_pred = T.add(V_s,
-                       (A_s - A_s.mean(dim=1, keepdim=True)))[indices, actions]
-        q_next = T.add(V_s_,
-                       (A_s_ - A_s_.mean(dim=1, keepdim=True))).max(dim=1)[0]
+                        (A_s - A_s.mean(dim=1, keepdim=True)))[indices, actions]
 
+        q_next = T.add(V_s_, (A_s_ - A_s_.mean(dim=1, keepdim=True)))
+
+        q_eval = T.add(V_s_eval, (A_s_eval - A_s_eval.mean(dim=1,keepdim=True)))
+
+        max_actions = T.argmax(q_eval, dim=1)
         q_next[dones] = 0.0
-        q_target = rewards + self.gamma * q_next
+
+        q_target = rewards + self.gamma*q_next[indices, max_actions]
 
         loss = self.q_eval.loss(q_target, q_pred).to(self.q_eval.device)
         loss.backward()

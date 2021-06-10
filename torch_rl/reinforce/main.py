@@ -3,9 +3,9 @@ import numpy as np
 from .agent import Agent
 
 
-def run(env, n_games, gamma, fc1_dims, fc2_dims, optimizer_type, optimizer_args={}):
+def run(env, n_games, gamma, fc1_dims, optimizer_type, optimizer_args={}):
     agent = Agent(gamma, env.action_space.n, env.observation_space.shape,
-                  fc1_dims, fc2_dims, optimizer_type, optimizer_args)
+                  fc1_dims, optimizer_type, optimizer_args)
 
     scores = np.zeros(n_games)
 

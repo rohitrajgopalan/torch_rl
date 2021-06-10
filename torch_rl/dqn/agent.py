@@ -6,7 +6,7 @@ from torch_rl.replay.discrete import DiscreteReplayBuffer
 
 class Agent:
     def __init__(self, gamma, epsilon, n_actions, input_dims,
-                 mem_size, batch_size, fc1_dims, fc2_dims, optimizer_type, eps_min=0.01, eps_dec=5e-7,
+                 mem_size, batch_size, fc_dims, optimizer_type, eps_min=0.01, eps_dec=5e-7,
                  replace=1000, optimizer_args={}, randomized=False):
         self.gamma = gamma
         self.epsilon = epsilon
@@ -21,7 +21,7 @@ class Agent:
 
         self.memory = DiscreteReplayBuffer(mem_size, input_dims, randomized)
 
-        self.q_eval = Network(self.input_dims, self.n_actions, fc1_dims, fc2_dims, optimizer_type, optimizer_args)
+        self.q_eval = Network(self.input_dims, self.n_actions, fc_dims, optimizer_type, optimizer_args)
 
         self.q_next = Network(self.input_dims, self.n_actions, fc1_dims, fc2_dims, optimizer_type, optimizer_args)
 
