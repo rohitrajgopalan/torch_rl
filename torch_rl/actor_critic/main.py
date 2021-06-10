@@ -23,8 +23,7 @@ def run(env, n_games, gamma, fc_dims, optimizer_type, optimizer_args={}):
             observation_, reward, done, _ = env.step(action)
             score += reward
 
-            agent.store_rewards(reward)
-            agent.learn()
+            agent.learn(observation, reward, observation_, done)
 
             observation = observation_
 
@@ -33,4 +32,4 @@ def run(env, n_games, gamma, fc_dims, optimizer_type, optimizer_args={}):
         scores[i] = score
         num_time_steps += t
 
-    return num_time_steps, np.mean(scores), np.mean(agent.loss_history)
+    return num_time_steps, np.mean(scores), np.mean(agent.actor_loss_history), np.mean(agent.critic_loss_history)
