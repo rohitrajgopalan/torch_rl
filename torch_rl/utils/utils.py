@@ -56,3 +56,7 @@ def get_torch_optimizer(params, optimizer_type, optimizer_args):
 
         return optimizer.SGD(params, lr=learning_rate, momentum=momentum, weight_decay=weight_decay,
                              dampening=dampening, nesterov=nesterov)
+
+
+def have_we_ran_out_of_time(env, current_t):
+    return hasattr(env, '_max_episode_steps') and current_t == env._max_episode_steps
