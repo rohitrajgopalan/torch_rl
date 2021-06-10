@@ -60,3 +60,12 @@ def get_torch_optimizer(params, optimizer_type, optimizer_args):
 
 def have_we_ran_out_of_time(env, current_t):
     return hasattr(env, '_max_episode_steps') and current_t == env._max_episode_steps
+
+
+def get_hidden_layer_sizes(fc_dims):
+    if type(fc_dims) == int:
+        return fc_dims, fc_dims
+    elif type(fc_dims) in [list, tuple]:
+        return fc_dims[0], fc_dims[1]
+    else:
+        raise TypeError('fc_dims should be integer, list or tuple')

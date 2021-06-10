@@ -1,16 +1,18 @@
 import torch as T
 import torch.nn as nn
 import torch.nn.functional as F
-from torch_rl.utils.utils import get_torch_optimizer
+from torch_rl.utils.utils import get_torch_optimizer, get_hidden_layer_sizes
 
 
 class PolicyNetwork(nn.Module):
     def __init__(self, input_dim, n_actions, fc_dims, optimizer_type, optimizer_args, init_w=3e-3):
         super(PolicyNetwork, self).__init__()
 
-        self.fc1 = nn.Linear(*input_dim, fc_dims)
-        self.fc2 = nn.Linear(fc_dims, fc_dims)
-        self.fc3 = nn.Linear(fc_dims, n_actions)
+        fc1_dims, fc2_dims = get_hidden_layer_sizes(fc_dims)
+
+        self.fc1 = nn.Linear(*input_dim, fc1_dims)
+        self.fc2 = nn.Linear(fc1_dims, fc2_dims)
+        self.fc3 = nn.Linear(fc2_dims, n_actions)
 
         self.optimizer = get_torch_optimizer(self.parameters(), optimizer_type, optimizer_args)
 
