@@ -14,18 +14,13 @@ def run(env, n_games, gamma, tau,
         score = 0
         observation = env.reset()
         done = False
-        action = None
-        log_prob = 0
-        reward = 0
-        value = 0
         t = 0
         while not done:
             action, log_prob, value = agent.choose_action(observation)
             observation_, reward, done, _ = env.step(action)
-            _, _, next_value = agent.choose_action(observation_)
-            agent.store_transition(observation, action, log_prob, reward, value, 1)
-            agent.learn()
             score += reward
+            agent.store_transition(observation, action, log_prob, reward, value, 1-int(done))
+            agent.learn()
             observation = observation_
 
             if hasattr(env, '_max_episode_steps') and t == env._max_episode_steps:
@@ -33,8 +28,6 @@ def run(env, n_games, gamma, tau,
 
             t += 1
 
-        agent.store_transition(observation, action, log_prob, reward, value, 0)
-        agent.learn()
         scores[i] = score
 
     return np.mean(scores), np.mean(agent.loss_history)
