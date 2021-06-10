@@ -14,6 +14,7 @@ def run(env, n_games, gamma, fc1_dims, fc2_dims, optimizer_type, optimizer_args=
         observation = env.reset()
         done = False
 
+        t = 0
         while not done:
             action = agent.choose_action(observation)
             observation_, reward, done, _ = env.step(action)
@@ -23,6 +24,11 @@ def run(env, n_games, gamma, fc1_dims, fc2_dims, optimizer_type, optimizer_args=
             agent.learn()
 
             observation = observation_
+
+            if hasattr(env, '_max_episode_steps') and t == env._max_episode_steps:
+                break
+
+            t += 1
 
         scores[i] = score
 

@@ -12,6 +12,7 @@ def run(env, n_games, gamma, epsilon,
 
     scores = np.zeros(n_games)
 
+    t = 0
     for i in range(n_games):
         score = 0
         observation = env.reset()
@@ -26,6 +27,11 @@ def run(env, n_games, gamma, epsilon,
             agent.learn()
 
             observation = observation_
+
+            if hasattr(env, '_max_episode_steps') and t == env._max_episode_steps:
+                break
+
+            t += 1
 
         scores[i] = score
 

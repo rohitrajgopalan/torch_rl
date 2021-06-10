@@ -18,6 +18,7 @@ def run(env, n_games, gamma, tau,
         log_prob = 0
         reward = 0
         value = 0
+        t = 0
         while not done:
             action, log_prob, value = agent.choose_action(observation)
             observation_, reward, done, _ = env.step(action)
@@ -26,6 +27,11 @@ def run(env, n_games, gamma, tau,
             agent.learn()
             score += reward
             observation = observation_
+
+            if hasattr(env, '_max_episode_steps') and t == env._max_episode_steps:
+                break
+
+            t += 1
 
         agent.store_transition(observation, action, log_prob, reward, value, 0)
         agent.learn()
