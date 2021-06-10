@@ -11,16 +11,18 @@ class ReplayBuffer:
 
         self.action_memory = np.zeros((self.mem_size, n_actions), dtype=np.float32)
         self.log_probs_memory = np.zeros(self.mem_size, dtype=np.float32)
-        self.returns_memory = np.zeros(self.mem_size, dtype=np.float32)
-        self.advantages_memory = np.zeros(self.mem_size, dtype=np.float32)
+        self.reward_memory = np.zeros(self.mem_size, dtype=np.float32)
+        self.value_memory = np.zeros(self.mem_size, dtype=np.float32)
+        self.mask_memory = np.zeros(self.mem_size, dtype=np.float32)
 
-    def store_transition(self, state, action, log_prob, return_val, advantage):
+    def store_transition(self, state, action, log_prob, reward, value, mask):
         index = self.mem_cntr % self.mem_size
         self.state_memory[index] = state
         self.action_memory[index] = action
         self.log_probs_memory[index] = log_prob
-        self.returns_memory[index] = return_val
-        self.advantages_memory[index] = advantage
+        self.reward_memory[index] = reward
+        self.value_memory[index] = value
+        self.mask_memory[index] = mask
         self.mem_cntr += 1
 
     def sample_buffer(self, batch_size):
@@ -33,7 +35,8 @@ class ReplayBuffer:
         states = self.state_memory[batch]
         actions = self.action_memory[batch]
         log_probs = self.log_probs_memory[batch]
-        returns = self.returns_memory[batch]
-        advantages = self.advantages_memory[batch]
+        rewards = self.reward_memory[batch]
+        values = self.value_memory[batch]
+        masks = self.mask_memory[batch]
 
-        return states, actions, log_probs, returns, advantages
+        return states, actions, log_probs, rewards, values, masks
