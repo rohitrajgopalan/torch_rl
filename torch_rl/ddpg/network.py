@@ -32,7 +32,7 @@ class ValueNetwork(nn.Module):
     def __init__(self, input_dim, action_dim, fc_dims, optimizer_type, optimizer_args, init_w=3e-3):
         super(ValueNetwork, self).__init__()
 
-        self.fc1 = nn.Linear(*input_dim + action_dim, fc_dims)
+        self.fc1 = nn.Linear(input_dim[0] + action_dim[0], fc_dims)
         self.fc2 = nn.Linear(fc_dims, fc_dims)
         self.fc3 = nn.Linear(fc_dims, 1)
 
