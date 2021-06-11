@@ -16,7 +16,7 @@ class Agent:
 
     def choose_action(self, observation):
         state = T.Tensor([observation]).to(self.policy.device)
-        probabilities = F.softmax(self.policy.forward(state))
+        probabilities = F.softmax(self.policy.forward(state), dim=1)
         action_probs = T.distributions.Categorical(probabilities)
         action = action_probs.sample()
         log_probs = action_probs.log_prob(action)
@@ -43,11 +43,11 @@ class Agent:
         G = T.tensor(G, dtype=T.float).to(self.policy.device)
 
         loss = 0
-        for g, logprob in zip(G, self.action_memory):
+        for g, logprob in zip(G, self.log_prob_memory):
             loss += -g * logprob
         loss.backward()
         self.policy.optimizer.step()
 
-        self.action_memory = []
+        self.log_prob_memory = []
         self.reward_memory = []
         self.loss_history.append(loss.item())

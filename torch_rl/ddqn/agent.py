@@ -1,6 +1,6 @@
 import numpy as np
 import torch as T
-from .network import Network
+from torch_rl.dqn.network import Network
 from torch_rl.replay.discrete import DiscreteReplayBuffer
 
 
@@ -23,7 +23,7 @@ class Agent:
 
         self.q_eval = Network(self.input_dims, self.n_actions, fc_dims, optimizer_type, optimizer_args)
 
-        self.q_next = Network(self.input_dims, self.n_actions, fc1_dims, fc2_dims, optimizer_type, optimizer_args)
+        self.q_next = Network(self.input_dims, self.n_actions, fc_dims, optimizer_type, optimizer_args)
 
         self.loss_history = []
 
