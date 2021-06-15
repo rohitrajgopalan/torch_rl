@@ -1,5 +1,6 @@
 import torch as T
 import torch.nn.functional as F
+import numpy as np
 
 from torch_rl.ddpg.network import PolicyNetwork, ValueNetwork
 from torch_rl.noise.gaussian import GaussianExploration
@@ -45,6 +46,7 @@ class Agent:
         self.value1_loss_history = []
         self.value2_loss_history = []
         self.learn_step_cntr = 0
+        self.action_space = action_space
 
     def update_network_parameters(self, soft_tau=None):
         if soft_tau is None:
@@ -75,56 +77,67 @@ class Agent:
     def remember(self, state, action, reward, state_, done):
         self.memory.store_transition(state, action, reward, state_, done)
 
+
+    def sample_memory(self):
+        state, action, reward, state_, done = self.memory.sample_buffer(self.batch_size)
+        states = T.tensor(state, dtype=T.float).to(self.critic1.device)
+        actions = T.tensor(action, dtype=T.float).to(self.critic1.device)
+        rewards = T.tensor(reward, dtype=T.float).to(self.critic1.device)
+        states_ = T.tensor(state_, dtype=T.float).to(self.critic1.device)
+        dones = T.tensor(done).to(self.actor.device)
+
+        return states, actions, rewards, states_, dones
+
     def learn(self):
         if self.memory.mem_cntr < self.batch_size:
             return
 
-        states, actions, rewards, states_, done = \
-            self.memory.sample_buffer(self.batch_size)
-
-        masks = 1 - int(done)
-
-        states = T.tensor(states, dtype=T.float).to(self.actor.device)
-        states_ = T.tensor(states_, dtype=T.float).to(self.actor.device)
-        actions = T.tensor(actions, dtype=T.float).to(self.actor.device)
-        rewards = T.tensor(rewards, dtype=T.float).to(self.actor.device)
-        masks = T.tensor(masks).to(self.actor.device)
+        states, actions, rewards, states_, dones = self.sample_memory()
 
         target_actions = self.target_actor.forward(states_)
-        noise = T.normal(T.zeros(target_actions.size()), self.noise_std).to(self.actor.device)
-        noise = T.clamp(noise, -self.noise_clip, self.noise_clip)
-        target_actions += noise
+        target_actions = target_actions + T.clamp(T.tensor(np.random.normal(scale=self.noise_clip)), -self.noise_clip,
+                                                  self.noise_clip)
+        target_actions = T.clamp(target_actions, self.action_space.low[0], self.action_space.high[0])
 
-        target_q_value1 = self.target_critic1.forward(states_, target_actions)
-        target_q_value2 = self.target_critic2.forward(states_, target_actions)
-        target_q_value = T.min(target_q_value1, target_q_value2)
-        expected_q_value = rewards + (masks * self.gamma * target_q_value)
+        critic_value1_ = self.target_critic1.forward(states_, target_actions)
+        critic_value2_ = self.target_critic2.forward(states_, target_actions)
+        critic_value1 = self.critic1.forward(states, actions)
+        critic_value2 = self.critic2.forward(states, actions)
 
-        q_value1 = self.critic1.forward(states, actions)
-        q_value2 = self.critic2.forward(states, actions)
+        critic_value1_[done] = 0.0
+        critic_value2_[done] = 0.0
 
-        value_loss1 = F.mse_loss(q_value1, expected_q_value)
-        value_loss2 = F.mse_loss(q_value2, expected_q_value)
+        critic_value1_ = critic_value1_.view(-1)
+        critic_value2_ = critic_value2_.view(-1)
+
+        critic_value_ = T.min(critic_value1_, critic_value2_)
+
+        target = rewards + self.gamma*critic_value_
+        target = target.view(self.batch_size, 1)
 
         self.critic1.optimizer.zero_grad()
-        value_loss1.backward()
-        self.critic1.optimizer.step()
-
         self.critic2.optimizer.zero_grad()
-        value_loss2.backward()
+        critic_loss1 = F.mse_loss(target, critic_value1)
+        critic_loss2 = F.mse_loss(target, critic_value2)
+        critic_loss = critic_loss1 + critic_loss2
+        critic_loss.backward()
+
+        self.critic1.optimizer.step()
         self.critic2.optimizer.step()
 
-        if self.learn_step_cntr % self.policy_update_interval == 0:
-            policy_loss = self.critic1.forward(states, self.actor.forward(states))
-            policy_loss = -T.mean(policy_loss)
+        self.learn_step_cntr += 1
 
-            self.actor.optimizer.zero_grad()
-            policy_loss.backward()
-            self.actor.optimizer.step()
+        if self.learn_step_cntr % self.policy_update_interval != 0:
+            return
 
-            self.policy_loss_history.append(abs(policy_loss.item()))
+        self.actor.optimizer.zero_grad()
+        actor_loss1 = self.critic1.forward(states, self.actor.forward(states))
+        actor_loss = -actor_loss1.mean()
+        actor_loss.backward()
+        self.actor.optimizer.step()
 
-            self.update_network_parameters()
+        self.update_network_parameters()
 
-        self.value1_loss_history.append(value_loss1.item())
-        self.value2_loss_history.append(value_loss2.item())
+        self.policy_loss_history.append(abs(actor_loss.item()))
+        self.value1_loss_history.append(critic_loss1.item())
+        self.value2_loss_history.append(critic_loss2.item())
