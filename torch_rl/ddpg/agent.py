@@ -59,46 +59,44 @@ class Agent:
     def remember(self, state, action, reward, state_, done):
         self.memory.store_transition(state, action, reward, state_, done)
 
+    def sample_memory(self):
+        state, action, reward, state_, done = self.memory.sample_buffer(self.batch_size)
+        states = T.tensor(state, dtype=T.float).to(self.critic.device)
+        actions = T.tensor(action, dtype=T.float).to(self.critic.device)
+        rewards = T.tensor(reward, dtype=T.float).to(self.critic.device)
+        states_ = T.tensor(state_, dtype=T.float).to(self.critic.device)
+        dones = T.tensor(done).to(self.actor.device)
+
+        return states, actions, rewards, states_, dones
+
     def learn(self):
         if self.memory.mem_cntr < self.batch_size:
             return
 
-        states, actions, rewards, states_, done = \
-            self.memory.sample_buffer(self.batch_size)
-
-        masks = 1 - int(done)
-
-        states = T.tensor(states, dtype=T.float).to(self.actor.device)
-        states_ = T.tensor(states_, dtype=T.float).to(self.actor.device)
-        actions = T.tensor(actions, dtype=T.float).to(self.actor.device)
-        rewards = T.tensor(rewards, dtype=T.float).to(self.actor.device)
-        masks = T.tensor(masks).to(self.actor.device)
-
-        self.actor.optimizer.zero_grad()
-
-        policy_loss = self.critic.forward(states, self.actor.forward(states))
-        policy_loss = -policy_loss.mean()
-
-        policy_loss.backward()
-
-        self.policy_loss_history.append(policy_loss.item())
-
-        self.actor.optimizer.step()
-
-        self.critic.optimizer.zero_grad()
+        states, actions, rewards, states_, dones = self.sample_memory()
 
         target_actions = self.target_actor.forward(states_)
-        target_value = self.target_critic.forward(states_, target_actions)
+        critic_value_ = self.target_critic.forward(states_, target_actions)
+        critic_value = self.critic.forward(states, actions)
 
-        expected_value = rewards + (masks * self.gamma * target_value)
-        value = self.critic.forward(states, actions)
+        critic_value_[dones] = 0.0
+        critic_value_ = critic_value_.view(-1)
 
-        value_loss = F.mse_loss(expected_value, value)
+        target = rewards + self.gamma*critic_value_
+        target = target.view(self.batch_size, 1)
 
-        value_loss.backward()
-
-        self.value_loss_history.append(value_loss.item())
-
+        self.critic.optimizer.zero_grad()
+        critic_loss = F.mse_loss(target, critic_value)
+        critic_loss.backward()
         self.critic.optimizer.step()
 
+        self.actor.optimizer.zero_grad()
+        actor_loss = self.critic.forward(states, self.actor.forward(states))
+        actor_loss = -actor_loss.mean()
+        actor_loss.backward()
+        self.actor.optimizer.step()
+
         self.update_network_parameters()
+
+        self.policy_loss_history.append(abs(actor_loss.item()))
+        self.value_loss_history.append(critic_loss.item())
