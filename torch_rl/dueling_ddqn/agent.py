@@ -27,8 +27,8 @@ class Agent:
 
         self.loss_history = []
 
-    def choose_action(self, observation):
-        if np.random.random() > self.epsilon:
+    def choose_action(self, observation, train=True):
+        if not train or np.random.random() > self.epsilon:
             state = T.tensor([observation], dtype=T.float).to(self.q_eval.device)
             _, advantage = self.q_eval.forward(state)
             action = T.argmax(advantage).item()
