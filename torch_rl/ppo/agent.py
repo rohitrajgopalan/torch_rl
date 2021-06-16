@@ -75,7 +75,7 @@ class Agent:
             obs = self.env.reset()
             done = False
             t = 0
-            while not done and have_we_ran_out_of_time(self.env, t):
+            while not done and not have_we_ran_out_of_time(self.env, t):
                 action, _ = self.get_action(obs, train=False)
                 obs, rew, done, _ = self.env.step(action)
                 score += rew
@@ -100,7 +100,7 @@ class Agent:
             obs = self.env.reset()
             done = False
             ep_t = 0
-            while not done and have_we_ran_out_of_time(self.env, ep_t):
+            while not done and not have_we_ran_out_of_time(self.env, ep_t):
                 t += 1
 
                 batch_obs.append(obs)
