@@ -14,15 +14,18 @@ class Agent:
         self.current_log_prob = 0.0
         self.loss_history = []
 
-    def choose_action(self, observation):
+    def choose_action(self, observation, train=True):
         state = T.Tensor([observation]).to(self.policy.device)
         probabilities = F.softmax(self.policy.forward(state), dim=1)
-        action_probs = T.distributions.Categorical(probabilities)
-        action = action_probs.sample()
-        log_probs = action_probs.log_prob(action)
-        self.log_prob_memory.append(log_probs)
+        if train:
+            action_probs = T.distributions.Categorical(probabilities)
+            action = action_probs.sample()
+            log_probs = action_probs.log_prob(action)
+            self.log_prob_memory.append(log_probs)
 
-        return action.item()
+            return action.item()
+        else:
+            return T.argmax(probabilities).item()
 
     def store_rewards(self, reward):
         self.reward_memory.append(reward)
