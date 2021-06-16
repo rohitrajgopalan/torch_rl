@@ -50,9 +50,9 @@ class Agent:
             )
 
     def choose_action(self, observation, t=0):
-        state = T.tensor([observation], dtype=T.float).to(self.actor.device)
+        state = T.tensor(observation, dtype=T.float).to(self.actor.device)
         action = self.actor.forward(state)
-        action = action.detach().cpu().numpy()[0, 0]
+        action = action.cpu().detach().numpy()
 
         return self.noise.get_action(action, t)
 
