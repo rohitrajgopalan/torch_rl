@@ -11,10 +11,10 @@ https://deeplearningcourses.com/c/cutting-edge-artificial-intelligence <br />
 https://github.com/philtabor/Deep-Q-Learning-Paper-To-Code <br />
 https://github.com/philtabor/Actor-Critic-Methods-Paper-To-Code <br />
 
-Based from the above insipiration, I have created agents using DQN, Double DQN, Dueling DQN, Double Dueling DQN, PPO, REINFORCE, ActorCritic, DDPG, TD3 and SAC.
+Based from the above inspiration, I have created agents using DQN, Double DQN, Dueling DQN, Double Dueling DQN, PPO, REINFORCE, ActorCritic, DDPG, TD3 and SAC.
 The intent is for this library to work with OpenAI Gym style environments <br />
 
 Setting up the library is simple as follows <br />
 1. Navigate to the root of the torch_rl directory on your local machine on the terminal<br />
 2. Run python setup.py sdist <br />
-3. Run python -m pip install dist/torch-rl-1.7.tar.gz <br />
+3. Run python -m pip install dist/torch-rl-2.0.tar.gz <br />
