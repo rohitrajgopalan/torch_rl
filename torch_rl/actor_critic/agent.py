@@ -13,16 +13,23 @@ class Agent:
         self.actor_loss_history = []
         self.critic_loss_history = []
 
-    def choose_action(self, observation):
-        state = T.tensor([observation], dtype=T.float).to(self.actor_critic.device)
-        probabilities, _ = self.actor_critic.forward(state)
-        probabilities = F.softmax(probabilities, dim=1)
-        action_probs = T.distributions.Categorical(probabilities)
-        action = action_probs.sample()
-        log_prob = action_probs.log_prob(action)
-        self.log_prob = log_prob
+    def choose_action(self, observation, train=True):
+        if train:
+            state = T.tensor([observation], dtype=T.float).to(self.actor_critic.device)
+            probabilities, _ = self.actor_critic.forward(state)
+            probabilities = F.softmax(probabilities, dim=1)
+            action_probs = T.distributions.Categorical(probabilities)
+            action = action_probs.sample()
+            log_prob = action_probs.log_prob(action)
+            self.log_prob = log_prob
 
-        return action.item()
+            return action.item()
+        else:
+            state = T.tensor([observation], dtype=T.float).to(self.actor_critic.device)
+            probabilities, _ = self.actor_critic.forward(state)
+            probabilities = F.softmax(probabilities, dim=1)
+
+            return T.argmax(probabilities).item()
 
     def learn(self, state, reward, state_, done):
         self.actor_critic.optimizer.zero_grad()

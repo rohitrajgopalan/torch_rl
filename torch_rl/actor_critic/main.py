@@ -8,20 +8,28 @@ def run(env, n_games, gamma, fc_dims, optimizer_type, optimizer_args={}):
     agent = Agent(gamma, env.action_space.n, env.observation_space.shape,
                   fc_dims, optimizer_type, optimizer_args)
 
-    scores = np.zeros(n_games)
+    if type(n_games) == int:
+        n_games_train = n_games
+        n_games_test = n_games
+    elif type(n_games) == tuple:
+        n_games_train, n_games_test = n_games
+    else:
+        raise ValueError('n_games should either be int or tuple')
 
-    num_time_steps = 0
+    scores_train = np.zeros(n_games_train)
 
-    for i in range(n_games):
-        score = 0
+    num_time_steps_train = 0
+
+    for i in range(n_games_train):
+        score_train = 0
         observation = env.reset()
         done = False
 
         t = 0
         while not done and not have_we_ran_out_of_time(env, t):
-            action = agent.choose_action(observation)
+            action = agent.choose_action(observation, train=True)
             observation_, reward, done, _ = env.step(action)
-            score += reward
+            score_train += reward
 
             agent.learn(observation, reward, observation_, done)
 
@@ -29,7 +37,30 @@ def run(env, n_games, gamma, fc_dims, optimizer_type, optimizer_args={}):
 
             t += 1
 
-        scores[i] = score
-        num_time_steps += t
+        scores_train[i] = score_train
+        num_time_steps_train += t
 
-    return num_time_steps, np.mean(scores), np.mean(agent.actor_loss_history), np.mean(agent.critic_loss_history)
+    if n_games_test == 0:
+        return num_time_steps_train, np.mean(scores_train), 0, -1, \
+               np.mean(agent.actor_loss_history), np.mean(agent.critic_loss_history)
+    else:
+        scores_test = np.zeros(n_games_test)
+        num_time_steps_test = 0
+
+        for i in range(n_games_test):
+            score_test = 0
+            observation = env.reset()
+            done = False
+
+            t = 0
+            while not done and have_we_ran_out_of_time(env, t):
+                action = agent.choose_action(observation, False)
+                observation, reward, done, _ = env.step(action)
+                score_test += reward
+
+                t += 1
+                
+            scores_test[i] = score_test
+            num_time_steps_test += t
+
+        return num_time_steps_train, np.mean(scores_train), num_time_steps_test, np.mean(scores_test), np.mean(agent.actor_loss_history), np.mean(agent.critic_loss_history)
