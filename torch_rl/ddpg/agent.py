@@ -49,12 +49,15 @@ class Agent:
                 target_param.data * (1.0 - soft_tau) + param.data * soft_tau
             )
 
-    def choose_action(self, observation, t=0):
+    def choose_action(self, observation, t=0, train=True):
         state = T.tensor(observation, dtype=T.float).to(self.actor.device)
         action = self.actor.forward(state)
         action = action.cpu().detach().numpy()
 
-        return self.noise.get_action(action, t)
+        if train:
+            return self.noise.get_action(action, t)
+        else:
+            return action
 
     def remember(self, state, action, reward, state_, done):
         self.memory.store_transition(state, action, reward, state_, done)
