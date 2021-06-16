@@ -60,21 +60,26 @@ class ActorNetwork(nn.Module):
 
         return mu, sigma
 
-    def sample_normal(self, state, reparameterize=True):
-        mu, sigma = self.forward(state)
-        probabilities = T.distributions.Normal(mu, sigma)
+    def sample_normal(self, state, reparameterize=True, train=True):
+        if train:
+            mu, sigma = self.forward(state)
+            probabilities = T.distributions.Normal(mu, sigma)
 
-        if reparameterize:
-            actions = probabilities.rsample()  # reparameterizes the policy
+            if reparameterize:
+                actions = probabilities.rsample()  # reparameterizes the policy
+            else:
+                actions = probabilities.sample()
+
+            action = T.tanh(actions) * T.tensor(self.max_action).to(self.device)
+            log_probs = probabilities.log_prob(actions)
+            log_probs -= T.log(1 - action.pow(2) + self.reparam_noise)
+            log_probs = log_probs.sum(1, keepdim=True)
+
+            return action, log_probs
         else:
-            actions = probabilities.sample()
-
-        action = T.tanh(actions) * T.tensor(self.max_action).to(self.device)
-        log_probs = probabilities.log_prob(actions)
-        log_probs -= T.log(1 - action.pow(2) + self.reparam_noise)
-        log_probs = log_probs.sum(1, keepdim=True)
-
-        return action, log_probs
+            mu, _ = self.forward(state)
+            action = T.tanh(mu) * T.tensor(self.max_action).to(self.device)
+            return action, None
 
 
 class ValueNetwork(nn.Module):

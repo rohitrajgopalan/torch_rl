@@ -34,9 +34,9 @@ class Agent:
         self.actor_loss_history = []
         self.critic_loss_history = []
 
-    def choose_action(self, observation):
+    def choose_action(self, observation, train=True):
         state = T.tensor(observation, dtype=T.float).to(self.actor.device)
-        actions, _ = self.actor.sample_normal(state, reparameterize=False)
+        actions, _ = self.actor.sample_normal(state, reparameterize=False, train=train)
         return actions.cpu().detach().numpy()
 
     def remember(self, state, action, reward, new_state, done):
