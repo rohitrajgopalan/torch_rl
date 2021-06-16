@@ -29,15 +29,15 @@ class Agent:
         self.actor_loss_history = []
         self.critic_loss_history = []
 
-        self.scores = []
+        self.scores_train = []
+        self.num_time_steps_train = 0
 
     def learn(self, total_time_steps):
 
-        current_t = 0
-        while current_t < total_time_steps:
+        while self.num_time_steps_train < total_time_steps:
             batch_obs, batch_acts, batch_log_probs, batch_rtgs, batch_lens = self.rollout()
 
-            current_t += np.sum(batch_lens)
+            self.num_time_steps_train += np.sum(batch_lens)
 
             V, _ = self.evaluate(batch_obs, batch_acts)
             A_k = batch_rtgs - V.detach()
@@ -66,6 +66,25 @@ class Agent:
                 self.actor_loss_history.append(abs(actor_loss.item()))
                 self.critic_loss_history.append(critic_loss.item())
 
+    def test(self, n_games):
+        scores = np.zeros(n_games)
+        num_time_steps = 0
+
+        for i in range(n_games):
+            score = 0
+            obs = self.env.reset()
+            done = False
+            t = 0
+            while not done and have_we_ran_out_of_time(self.env, t):
+                action, _ = self.get_action(obs, train=False)
+                obs, rew, done, _ = self.env.step(action)
+                score += rew
+                t += 1
+            scores[i] = score
+            num_time_steps += t
+
+        return num_time_steps, np.mean(scores)
+
     def rollout(self):
         batch_obs = []
         batch_acts = []
@@ -86,7 +105,7 @@ class Agent:
 
                 batch_obs.append(obs)
 
-                action, log_prob = self.get_action(obs)
+                action, log_prob = self.get_action(obs, train=True)
                 obs, rew, done, _ = self.env.step(action)
 
                 score += rew
@@ -100,7 +119,7 @@ class Agent:
             batch_lens.append(ep_t + 1)
             batch_rews.append(ep_rews)
 
-            self.scores.append(score)
+            self.scores_train.append(score)
 
         batch_obs = T.tensor(batch_obs, dtype=T.float)
         batch_acts = T.tensor(batch_acts, dtype=T.float)
@@ -120,14 +139,17 @@ class Agent:
 
         return T.tensor(batch_rtgs, dtype=T.float)
 
-    def get_action(self, obs):
+    def get_action(self, obs, train=True):
         obs = T.tensor(obs, dtype=T.float)
-        mean = self.actor.forward(obs)
-        dist = MultivariateNormal(mean, self.cov_mat)
-        action = dist.sample()
-        log_prob = dist.log_prob(action)
+        if train:
+            mean = self.actor.forward(obs)
+            dist = MultivariateNormal(mean, self.cov_mat)
+            action = dist.sample()
+            log_prob = dist.log_prob(action)
 
-        return action.cpu().detach().numpy(), log_prob.cpu().detach()
+            return action.cpu().detach().numpy(), log_prob.cpu().detach()
+        else:
+            return self.actor.forward(obs), None
 
     def evaluate(self, batch_obs, batch_acts):
         batch_obs = T.tensor(batch_obs, dtype=T.float)
