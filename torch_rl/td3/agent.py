@@ -68,15 +68,14 @@ class Agent:
             )
 
     def choose_action(self, observation, t=0):
-        state = T.tensor([observation], dtype=T.float).to(self.actor.device)
+        state = T.tensor(observation, dtype=T.float).to(self.actor.device)
         action = self.actor.forward(state)
-        action = action.detach().cpu().numpy()[0, 0]
+        action = action.detach().cpu().numpy()
 
         return self.noise.get_action(action, t)
 
     def remember(self, state, action, reward, state_, done):
         self.memory.store_transition(state, action, reward, state_, done)
-
 
     def sample_memory(self):
         state, action, reward, state_, done = self.memory.sample_buffer(self.batch_size)
@@ -104,15 +103,15 @@ class Agent:
         critic_value1 = self.critic1.forward(states, actions)
         critic_value2 = self.critic2.forward(states, actions)
 
-        critic_value1_[done] = 0.0
-        critic_value2_[done] = 0.0
+        critic_value1_[dones] = 0.0
+        critic_value2_[dones] = 0.0
 
         critic_value1_ = critic_value1_.view(-1)
         critic_value2_ = critic_value2_.view(-1)
 
         critic_value_ = T.min(critic_value1_, critic_value2_)
 
-        target = rewards + self.gamma*critic_value_
+        target = rewards + self.gamma * critic_value_
         target = target.view(self.batch_size, 1)
 
         self.critic1.optimizer.zero_grad()
