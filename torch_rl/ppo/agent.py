@@ -121,16 +121,18 @@ class Agent:
         return T.tensor(batch_rtgs, dtype=T.float)
 
     def get_action(self, obs):
-        mean = self.actor(obs)
+        obs = T.tensor(obs, dtype=T.float)
+        mean = self.actor.forward(obs)
         dist = MultivariateNormal(mean, self.cov_mat)
         action = dist.sample()
         log_prob = dist.log_prob(action)
 
-        return action.detach().numpy(), log_prob.detach()
+        return action.cpu().detach().numpy(), log_prob.cpu().detach()
 
     def evaluate(self, batch_obs, batch_acts):
-        V = self.critic(batch_obs).squeeze()
-        mean = self.actor(batch_obs)
+        batch_obs = T.tensor(batch_obs, dtype=T.float)
+        V = self.critic.forward(batch_obs).squeeze()
+        mean = self.actor.forward(batch_obs)
         dist = MultivariateNormal(mean, self.cov_mat)
         log_probs = dist.log_prob(batch_acts)
 
