@@ -1,12 +1,14 @@
 import numpy as np
 
 from .agent import Agent
-from torch_rl.utils.utils import have_we_ran_out_of_time
+from torch_rl.action_blocker.action_blocker import ActionBlocker
+from torch_rl.utils.utils import have_we_ran_out_of_time, get_next_discrete_action
 
 
 def run(env, n_games, gamma, epsilon,
         mem_size, batch_size, fc_dims, optimizer_type, eps_min=0.01, eps_dec=5e-7,
-        replace=1000, optimizer_args={}, randomized=False):
+        replace=1000, optimizer_args={}, randomized=False, enable_action_blocking=False,
+        min_penalty=0):
     agent = Agent(gamma, epsilon, env.action_space.n, env.observation_space.shape,
                   mem_size, batch_size, fc_dims, optimizer_type, eps_min, eps_dec,
                   replace, optimizer_args, randomized)
@@ -19,6 +21,11 @@ def run(env, n_games, gamma, epsilon,
     else:
         raise ValueError('n_games should either be int or tuple')
 
+    action_blocker = None
+    if enable_action_blocking:
+        action_blocker = ActionBlocker(env.observation_space.shape, env.action_space, fc_dims, optimizer_type,
+                                       optimizer_args, randomized, mem_size, min_penalty)
+
     scores_train = np.zeros(n_games_train)
     num_time_steps_train = 0
     for i in range(n_games_train):
@@ -28,12 +35,23 @@ def run(env, n_games, gamma, epsilon,
 
         t = 0
         while not done and not have_we_ran_out_of_time(env, t):
-            action = agent.choose_action(observation, train=True)
+            original_action, action_blocked, action = get_next_discrete_action(agent, env, observation,
+                                                                               True, enable_action_blocking,
+                                                                               action_blocker)
+
+            if action is None:
+                continue
+
             observation_, reward, done, _ = env.step(action)
+
+            if enable_action_blocking and action_blocked:
+                reward *= -1
             score += reward
 
-            agent.store_transition(observation, action, reward, observation_, done)
+            agent.store_transition(observation, original_action, reward, observation_, done)
             agent.learn()
+            if enable_action_blocking:
+                action_blocker.learn()
 
             observation = observation_
 
@@ -43,8 +61,35 @@ def run(env, n_games, gamma, epsilon,
         num_time_steps_train += t
 
     if n_games_test == 0:
-        return num_time_steps_train, np.mean(scores_train), 0, -1, np.mean(agent.loss_history)
+        if enable_action_blocking:
+            precision, recall = action_blocker.get_precision_and_recall()
+            num_actions_blocked = action_blocker.num_actions_blocked
+        else:
+            precision, recall = -1, -1
+            num_actions_blocked = 0
+
+        return {
+            'num_time_steps_train': num_time_steps_train,
+            'avg_score_train': np.mean(scores_train),
+            'action_blocker_precision_train': precision,
+            'action_blocker_recall_train': recall,
+            'num_actions_blocked_train': num_actions_blocked,
+            'num_time_steps_test': 0,
+            'avg_score_test': -1,
+            'action_blocker_precision_test': -1,
+            'action_blocker_recall_test': -1,
+            'num_actions_blocked_test': 0,
+            'avg_loss': np.mean(agent.loss_history)
+        }
     else:
+        if enable_action_blocking:
+            precision, recall = action_blocker.get_precision_and_recall()
+            num_actions_blocked_train = action_blocker.num_actions_blocked
+            action_blocker.reset_confusion_matrix()
+        else:
+            precision, recall = -1, -1
+            num_actions_blocked_train = 0
+
         scores_test = np.zeros(n_games_test)
         num_time_steps_test = 0
 
@@ -55,8 +100,17 @@ def run(env, n_games, gamma, epsilon,
 
             t = 0
             while not done and not have_we_ran_out_of_time(env, t):
-                action = agent.choose_action(observation, train=False)
-                observation, reward, done, _ = env.step(action)
+                _, action_blocked, action = get_next_discrete_action(agent, env, observation,
+                                                                     False, enable_action_blocking,
+                                                                     action_blocker)
+
+                if action is None:
+                    continue
+
+                observation_, reward, done, _ = env.step(action)
+
+                if enable_action_blocking and action_blocked:
+                    reward *= -1
                 score += reward
 
                 t += 1
@@ -64,4 +118,23 @@ def run(env, n_games, gamma, epsilon,
             scores_test[i] = score
             num_time_steps_test += t
 
-        return num_time_steps_train, np.mean(scores_train), num_time_steps_test, np.mean(scores_test), np.mean(agent.loss_history)
+        if enable_action_blocking:
+            test_precision, test_recall = action_blocker.get_precision_and_recall()
+            num_actions_blocked_test = action_blocker.num_actions_blocked
+        else:
+            test_precision, test_recall = -1, -1
+            num_actions_blocked_test = 0
+
+        return {
+            'num_time_steps_train': num_time_steps_train,
+            'avg_score_train': np.mean(scores_train),
+            'action_blocker_precision_train': precision,
+            'action_blocker_recall_train': recall,
+            'num_actions_blocked_train': num_actions_blocked_train,
+            'num_time_steps_test': num_time_steps_test,
+            'avg_score_test': np.mean(scores_test),
+            'action_blocker_precision_test': test_precision,
+            'action_blocker_recall_test': test_recall,
+            'num_actions_blocked_test': num_actions_blocked_test,
+            'avg_loss': np.mean(agent.loss_history)
+        }

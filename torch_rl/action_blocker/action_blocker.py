@@ -17,27 +17,26 @@ class ActionBlocker:
         self.mem_size = mem_size
         self.mem_cntr = 0
         if self.action_dim == 1:
-            self.actions = np.zeros(self.mem_size, dtype=np.int32)
+            self.actions = np.zeros(self.mem_size)
         else:
-            self.actions = np.zeros((self.mem_size, self.action_dim), dtype=np.float32)
+            self.actions = np.zeros((self.mem_size, self.action_dim))
         self.states = np.zeros((self.mem_size, input_dims[0]))
         self.actual_logits = np.zeros(self.mem_size)
         self.num_actions_blocked = 0
 
-    def should_action_be_blocked(self, state, action):
+    def block_action(self, state, action):
         if self.action_dim == 1:
-            action = T.tensor([action], dtype=T.int32)
+            action = T.tensor([action], dtype=T.float32)
         else:
             action = T.tensor(action, dtype=T.float32)
 
         state = T.tensor(state, dtype=T.float32)
 
-        results = T.round(T.sigmoid(self.network.forward(state, action)))
-        result = results.cpu().detach().numpy()[0]
+        results = T.round(self.network.forward(state, action))
 
-        return result == 1
+        return results.cpu().detach().numpy()[0] == 1
 
-    def update_confusion_metrix(self, state, action, pred_logit, reward):
+    def update_confusion_matrix(self, state, action, pred_logit, reward):
         index = self.mem_cntr % self.mem_size
 
         self.num_actions_blocked += 1 if pred_logit == 1 else 0
@@ -80,7 +79,7 @@ class ActionBlocker:
         y_true = T.tensor(y_true).to(self.network.device)
 
         self.network.optimizer.zero_grad()
-        y_pred = T.round(T.sigmoid(self.network.forward(states, actions)))
+        y_pred = T.round(self.network.forward(states, actions))
         loss = self.network.loss(y_true, y_pred).to(self.network.device)
         loss.backward()
         self.network.optimizer.step()

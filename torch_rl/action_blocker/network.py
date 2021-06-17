@@ -13,14 +13,13 @@ class Network(nn.Module):
         self.model = nn.Sequential(
             nn.Linear(input_dim[0] + action_dim[0], fc1_dims),
             nn.ReLU(),
-            nn.BatchNorm1d(fc1_dims),
             nn.Linear(fc1_dims, fc2_dims),
             nn.ReLU(),
-            nn.BatchNorm1d(fc2_dims),
-            nn.Dropout(p=0.1)
+            nn.Linear(fc2_dims, 1),
+            nn.Sigmoid()
         )
 
-        self.loss = nn.BCEWithLogitsLoss()
+        self.loss = nn.BCELoss()
         self.optimizer = get_torch_optimizer(self.parameters(), optimizer_type, optimizer_args)
         self.device = T.device('cuda:0' if T.cuda.is_available() else 'cpu')
         self.to(self.device)

@@ -1,4 +1,5 @@
 import torch.optim as optimizer
+import numpy as np
 
 from .types import NetworkOptimizer
 
@@ -69,3 +70,34 @@ def get_hidden_layer_sizes(fc_dims):
         return fc_dims[0], fc_dims[1]
     else:
         raise TypeError('fc_dims should be integer, list or tuple')
+
+
+def get_next_discrete_action(agent, env, observation, train=True, enable_action_blocking=False, action_blocker=None):
+    original_action = agent.choose_action(observation, train=train)
+    actual_action = None
+    action_blocked = False
+
+    if enable_action_blocking:
+        pred_logit = action_blocker.block_action(observation, original_action)
+        _, _, reward, _ = env.step(original_action)
+        action_blocker.update_confusion_matrix(observation, original_action, int(pred_logit), reward)
+        if pred_logit:
+            action_blocked = True
+            blocked_actions = [original_action]
+            while len(blocked_actions) < env.action_space.n:
+                action = agent.choose_action(observation, train=train)
+                pred_logit = action_blocker.block_action(observation, action)
+                _, _, reward, _ = env.step(action)
+                action_blocker.update_confusion_matrix(observation, action, int(pred_logit), reward)
+                if pred_logit:
+                    action_blocked = True
+                    blocked_actions.append(action)
+                else:
+                    actual_action = action
+                    break
+        else:
+            actual_action = original_action
+    else:
+        actual_action = original_action
+
+    return original_action, action_blocked, actual_action
