@@ -22,6 +22,7 @@ class ActionBlocker:
             self.actions = np.zeros((self.mem_size, self.action_dim), dtype=np.float32)
         self.states = np.zeros((self.mem_size, input_dims[0]))
         self.actual_logits = np.zeros(self.mem_size)
+        self.num_actions_blocked = 0
 
     def should_action_be_blocked(self, state, action):
         if self.action_dim == 1:
@@ -38,6 +39,8 @@ class ActionBlocker:
 
     def update_confusion_metrix(self, state, action, pred_logit, reward):
         index = self.mem_cntr % self.mem_size
+
+        self.num_actions_blocked += 1 if pred_logit == 1 else 0
 
         actual_logit = 1 if reward <= -self.min_penalty else 0
         self.states[index] = state
@@ -58,6 +61,9 @@ class ActionBlocker:
         self.mem_cntr += 1
 
     def learn(self):
+        if self.mem_cntr < self.batch_size:
+            pass
+
         max_mem = min(self.mem_cntr, self.mem_size)
 
         if self.randomized_replay:
@@ -81,6 +87,7 @@ class ActionBlocker:
 
     def reset_confusion_matrix(self):
         self.confusion_matrix = {'t_p': 0, 'f_p': 0, 't_n': 0, 'f_n': 0}
+        self.num_actions_blocked = 0
 
     def get_precision_and_recall(self):
         true_positives = self.confusion_matrix['t_p']
