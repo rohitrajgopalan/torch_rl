@@ -30,8 +30,8 @@ class Agent:
     def choose_action(self, observation, train=True):
         if not train or np.random.random() > self.epsilon:
             if not type(observation) == np.ndarray:
-                observation = np.array([observation])
-            state = T.tensor([observation], dtype=T.float).to(self.q_eval.device)
+                observation = np.array([observation], dtype=np.float32)
+            state = T.tensor([observation], dtype=T.float32).to(self.q_eval.device)
             _, advantage = self.q_eval.forward(state)
             action = T.argmax(advantage).item()
         else:
