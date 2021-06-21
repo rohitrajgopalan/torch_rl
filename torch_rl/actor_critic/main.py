@@ -6,9 +6,9 @@ from torch_rl.utils.utils import have_we_ran_out_of_time, get_next_discrete_acti
 
 
 def run(env, n_games, gamma, fc_dims, optimizer_type, optimizer_args={}, enable_action_blocking=False,
-        min_penalty=0):
+        min_penalty=0, goal=None):
     agent = Agent(gamma, env.action_space.n, env.observation_space.shape,
-                  fc_dims, optimizer_type, optimizer_args)
+                  fc_dims, optimizer_type, optimizer_args, goal)
 
     if type(n_games) == int:
         n_games_train = n_games
