@@ -30,6 +30,8 @@ class ActionBlocker:
         else:
             action = T.tensor(action, dtype=T.float32)
 
+        if not type(state) == np.ndarray:
+            state = np.array([state]).astype(np.float32)
         state = T.tensor(state, dtype=T.float32)
 
         results = T.round(self.network.forward(state, action))
