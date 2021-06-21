@@ -29,13 +29,13 @@ class Agent:
 
     def choose_action(self, observation, train=True):
         if not train or np.random.random() > self.epsilon:
+            if not type(observation) == np.ndarray:
+                observation = np.array([observation])
             state = T.tensor([observation], dtype=T.float).to(self.q_eval.device)
             actions = self.q_eval.forward(state)
             action = T.argmax(actions).item()
         else:
             action = np.random.choice(self.action_space)
-
-        return action
 
     def store_transition(self, state, action, reward, state_, done):
         self.memory.store_transition(state, action, reward, state_, done)
