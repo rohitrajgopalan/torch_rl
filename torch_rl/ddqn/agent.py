@@ -86,7 +86,7 @@ class Agent:
 
         indices = np.arange(self.batch_size)
 
-        if goals is None:
+        if goals is not None:
             inputs = T.cat([states, goals], dim=1)
             inputs_ = T.cat([states_, goals], dim=1)
         else:
