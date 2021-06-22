@@ -4,13 +4,13 @@ from torch_rl.utils.utils import get_torch_optimizer, get_hidden_layer_sizes
 
 
 class Network(nn.Module):
-    def __init__(self, input_dims, n_actions, fc_dims, optimizer_type, optimizer_args={}):
+    def __init__(self, num_inputs, n_actions, fc_dims, optimizer_type, optimizer_args={}):
         super(Network, self).__init__()
 
         fc1_dims, fc2_dims = get_hidden_layer_sizes(fc_dims)
 
         self.model = nn.Sequential(
-            nn.Linear(*input_dims, fc1_dims),
+            nn.Linear(num_inputs, fc1_dims),
             nn.ReLU(),
             nn.Linear(fc1_dims, fc2_dims),
             nn.ReLU(),

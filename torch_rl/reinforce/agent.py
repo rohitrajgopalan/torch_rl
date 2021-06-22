@@ -6,17 +6,31 @@ from .network import Network
 
 class Agent:
     def __init__(self, gamma, n_actions, input_dims,
-                 fc_dims, optimizer_type, optimizer_args={}):
+                 fc_dims, optimizer_type, optimizer_args={}, goal=None):
         self.gamma = gamma
-        self.policy = Network(input_dims, n_actions, fc_dims, optimizer_type, optimizer_args)
         self.reward_memory = []
         self.log_prob_memory = []
         self.current_log_prob = 0.0
         self.loss_history = []
 
+        self.goal = goal
+        if self.goal is not None:
+            if not type(self.goal) == np.ndarray:
+                self.goal = np.array([self.goal]).astype(np.float32)
+            self.policy = Network(input_dims[0] + self.goal.shape[0], n_actions, fc_dims, optimizer_type, optimizer_args)
+        else:
+            self.policy = Network(input_dims[0], n_actions, fc_dims, optimizer_type, optimizer_args)
+
     def choose_action(self, observation, train=True):
-        state = T.Tensor([observation]).to(self.policy.device)
-        probabilities = F.softmax(self.policy.forward(state), dim=1)
+        if not type(observation) == np.ndarray:
+            observation = np.array([observation]).astype(np.float32)
+        state = T.tensor([observation], dtype=T.float).to(self.policy.device)
+        if self.goal is not None:
+            goal = T.tensor([self.goal], dtype=T.float32).to(self.policy.device)
+            inputs = T.cat([state, goal], dim=1)
+        else:
+            inputs = state
+        probabilities = F.softmax(self.policy.forward(inputs), dim=1)
         if train:
             action_probs = T.distributions.Categorical(probabilities)
             action = action_probs.sample()
