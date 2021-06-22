@@ -19,12 +19,11 @@ class Agent:
         self.action_space = [i for i in range(n_actions)]
         self.learn_step_counter = 0
 
-        self.memory = ReplayBuffer(mem_size, input_dims, randomized=randomized, goal=goal)
-
         self.goal = goal
         if self.goal is not None:
             if not type(self.goal) == np.ndarray:
                 self.goal = np.array([self.goal]).astype(np.float32)
+            
             self.q_eval = Network(self.input_dims[0] + self.goal.shape[0], self.n_actions, fc_dims, optimizer_type,
                                   optimizer_args)
             self.q_next = Network(self.input_dims[0] + self.goal.shape[0], self.n_actions, fc_dims, optimizer_type,
@@ -33,6 +32,7 @@ class Agent:
             self.q_eval = Network(self.input_dims[0], self.n_actions, fc_dims, optimizer_type, optimizer_args)
             self.q_next = Network(self.input_dims[0], self.n_actions, fc_dims, optimizer_type, optimizer_args)
 
+        self.memory = ReplayBuffer(mem_size, input_dims, randomized=randomized, goal=goal)
         self.loss_history = []
 
     def choose_action(self, observation, train=True):
