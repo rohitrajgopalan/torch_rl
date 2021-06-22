@@ -4,10 +4,14 @@ from .agent import Agent
 from torch_rl.action_blocker.action_blocker import ActionBlocker
 from torch_rl.utils.utils import have_we_ran_out_of_time, get_next_discrete_action
 
+from gym.spaces import Box
+
 
 def run(env, n_games, gamma, fc_dims, optimizer_type, optimizer_args={}, enable_action_blocking=False,
         min_penalty=0, goal=None):
-    agent = Agent(gamma, env.action_space.n, env.observation_space.shape,
+    input_dims = env.observation_space.shape if type(env.observation_space) == Box else (1,)
+
+    agent = Agent(gamma, env.action_space.n, input_dims,
                   fc_dims, optimizer_type, optimizer_args, goal)
 
     if type(n_games) == int:
@@ -20,7 +24,7 @@ def run(env, n_games, gamma, fc_dims, optimizer_type, optimizer_args={}, enable_
 
     action_blocker = None
     if enable_action_blocking:
-        action_blocker = ActionBlocker(input_dims=env.observation_space.shape, action_space=env.action_space,
+        action_blocker = ActionBlocker(input_dims=input_dims, action_space=env.action_space,
                                        fc_dims=fc_dims, optimizer_type=optimizer_type, optimizer_args=optimizer_args,
                                        min_penalty=min_penalty)
 
@@ -40,7 +44,8 @@ def run(env, n_games, gamma, fc_dims, optimizer_type, optimizer_args={}, enable_
                                                                  action_blocker)
 
             if action is None:
-                continue
+                print('WARNING: No valid policy action found, running sample action')
+                action = env.action_space.sample()
 
             observation_, reward, done, _ = env.step(action)
 
@@ -104,7 +109,8 @@ def run(env, n_games, gamma, fc_dims, optimizer_type, optimizer_args={}, enable_
                                                                      action_blocker)
 
                 if action is None:
-                    continue
+                    print('WARNING: No valid policy action found, running sample action')
+                    action = env.action_space.sample()
 
                 observation_, reward, done, _ = env.step(action)
 
