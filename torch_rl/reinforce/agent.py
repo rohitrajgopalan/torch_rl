@@ -24,7 +24,7 @@ class Agent:
     def choose_action(self, observation, train=True):
         if not type(observation) == np.ndarray:
             observation = np.array([observation]).astype(np.float32)
-        state = T.tensor([observation], dtype=T.float).to(self.policy.device)
+        state = T.tensor([observation], dtype=T.float32).to(self.policy.device)
         if self.goal is not None:
             goal = T.tensor([self.goal], dtype=T.float32).to(self.policy.device)
             inputs = T.cat([state, goal], dim=1)
