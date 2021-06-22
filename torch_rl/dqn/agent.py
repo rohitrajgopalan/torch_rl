@@ -85,10 +85,9 @@ class Agent:
         states, actions, rewards, states_, dones, goals = self.sample_memory()
         indices = np.arange(self.batch_size)
 
-        if self.goal is not None:
-            goal = T.tensor([self.goal], dtype=T.float32).to(self.q_eval.device)
-            inputs = T.cat([states, goal], dim=1)
-            inputs_ = T.cat([states_, goal], dim=1)
+        if goals is not None:
+            inputs = T.cat([states, goals], dim=1)
+            inputs_ = T.cat([states_, goals], dim=1)
         else:
             inputs = states
             inputs_ = states_
