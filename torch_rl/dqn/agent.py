@@ -86,11 +86,11 @@ class Agent:
         indices = np.arange(self.batch_size)
 
         if goals is not None:
-            inputs = T.cat([states, goals], dim=1)
-            inputs_ = T.cat([states_, goals], dim=1)
+            inputs = T.cat([states, goals], dim=1).float()
+            inputs_ = T.cat([states_, goals], dim=1).float()
         else:
-            inputs = states
-            inputs_ = states_
+            inputs = states.float()
+            inputs_ = states_.float()
 
         q_pred = self.q_eval.forward(inputs)[indices, actions]
         q_next = self.q_next.forward(inputs_).max(dim=1)[0]
