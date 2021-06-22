@@ -32,7 +32,7 @@ class Agent:
             self.q_eval = Network(self.input_dims[0], self.n_actions, fc_dims, optimizer_type, optimizer_args)
             self.q_next = Network(self.input_dims[0], self.n_actions, fc_dims, optimizer_type, optimizer_args)
 
-        self.memory = ReplayBuffer(mem_size, input_dims, randomized=randomized, goal=goal)
+        self.memory = ReplayBuffer(mem_size, input_dims, randomized=randomized, goal=self.goal)
         self.loss_history = []
 
     def choose_action(self, observation, train=True):

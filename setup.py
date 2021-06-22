@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(name='torch-rl',
-      version='4.3',
+      version='4.4',
       description='A Basic setup for Reinforcement Learning using PyTorch',
       author='Rohit Gopalan',
       author_email='rohitgopalan1990@gmail.com',
