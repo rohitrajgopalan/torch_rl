@@ -43,7 +43,11 @@ class Agent:
 
     def learn(self, state, reward, state_, done):
         self.actor_critic.optimizer.zero_grad()
-
+        
+        if not type(state) == np.ndarray:
+            state = np.array([state], dtype=np.float32)
+            state_ = np.array([state_], dtype=np.float32)
+        
         state = T.tensor([state], dtype=T.float32).to(self.actor_critic.device)
         state_ = T.tensor([state_], dtype=T.float32).to(self.actor_critic.device)
 
