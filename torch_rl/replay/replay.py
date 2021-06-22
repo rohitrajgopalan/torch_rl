@@ -6,19 +6,19 @@ class ReplayBuffer:
         self.mem_size = max_size
         self.mem_cntr = 0
         self.randomized = randomized
-        self.state_memory = np.zeros((self.mem_size, *input_shape)).astype(np.float32)
-        self.new_state_memory = np.zeros((self.mem_size, *input_shape)).astype(np.float32)
+        self.state_memory = np.zeros((self.mem_size, *input_shape), dtype=np.float32)
+        self.new_state_memory = np.zeros((self.mem_size, *input_shape), dtype=np.float32)
 
         if n_action_dims == 1:
-            self.action_memory = np.zeros(self.mem_size)
+            self.action_memory = np.zeros(self.mem_size, dtype=np.int64)
         else:
-            self.action_memory = np.zeros((self.mem_size, n_action_dims))
+            self.action_memory = np.zeros((self.mem_size, n_action_dims), dtype=np.float32)
 
-        self.reward_memory = np.zeros(self.mem_size)
+        self.reward_memory = np.zeros(self.mem_size, dtype=np.float32)
         self.terminal_memory = np.zeros(self.mem_size, dtype=np.bool)
 
         if goal is not None:
-            self.goal_memory = np.full((self.mem_size, goal.shape[0]), goal).astype(np.float32)
+            self.goal_memory = np.full((self.mem_size, goal.shape[0]), goal, dtype=np.float32)
         else:
             self.goal_memory = None
 
