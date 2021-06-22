@@ -44,8 +44,8 @@ class Agent:
     def learn(self, state, reward, state_, done):
         self.actor_critic.optimizer.zero_grad()
 
-        state = T.tensor([state], dtype=T.float).to(self.actor_critic.device)
-        state_ = T.tensor([state_], dtype=T.float).to(self.actor_critic.device)
+        state = T.tensor([state], dtype=T.float32).to(self.actor_critic.device)
+        state_ = T.tensor([state_], dtype=T.float32).to(self.actor_critic.device)
 
         if self.goal is not None:
             goal = T.tensor([self.goal], dtype=T.float32).to(self.actor_critic.device)
