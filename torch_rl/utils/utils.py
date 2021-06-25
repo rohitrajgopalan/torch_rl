@@ -1,5 +1,4 @@
 import torch.optim as optimizer
-import numpy as np
 
 from .types import NetworkOptimizer
 

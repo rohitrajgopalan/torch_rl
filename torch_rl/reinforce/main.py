@@ -52,13 +52,13 @@ def run(env, n_games, gamma, fc_dims, optimizer_type, optimizer_args={}, enable_
             score += reward
 
             agent.store_rewards(reward)
-            agent.learn()
-            if enable_action_blocking:
-                action_blocker.learn()
-
             observation = observation_
 
             t += 1
+
+        agent.learn()
+        if enable_action_blocking:
+            action_blocker.learn()
 
         scores_train[i] = score
         num_time_steps_train += t

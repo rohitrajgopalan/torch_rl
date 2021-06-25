@@ -35,6 +35,8 @@ class Agent:
         self.policy_loss_history = []
         self.value_loss_history = []
 
+        self.action_space = action_space
+
     def update_network_parameters(self, soft_tau=None):
         if soft_tau is None:
             soft_tau = self.tau
@@ -57,7 +59,7 @@ class Agent:
         if train:
             return self.noise.get_action(action, t)
         else:
-            return action
+            return np.clip(action, self.action_space.low, self.action_space.high)
 
     def remember(self, state, action, reward, state_, done):
         self.memory.store_transition(state, action, reward, state_, done)
