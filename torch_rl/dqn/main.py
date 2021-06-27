@@ -6,12 +6,12 @@ from torch_rl.action_blocker.action_blocker import ActionBlocker
 from torch_rl.utils.utils import have_we_ran_out_of_time, get_next_discrete_action
 
 
-def run(env, n_games, gamma, epsilon,
+def run(env, n_games, is_double, gamma, epsilon,
         mem_size, batch_size, fc_dims, optimizer_type, eps_min=0.01, eps_dec=5e-7,
         replace=1000, optimizer_args={}, randomized=False, enable_action_blocking=False,
         min_penalty=0, goal=None):
     input_dims = env.observation_space.shape if type(env.observation_space) == Box else (1,)
-    agent = Agent(gamma, epsilon, env.action_space.n, input_dims,
+    agent = Agent(is_double, gamma, epsilon, env.action_space.n, input_dims,
                   mem_size, batch_size, fc_dims, optimizer_type, eps_min, eps_dec,
                   replace, optimizer_args, randomized, goal)
 

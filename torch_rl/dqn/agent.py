@@ -5,9 +5,10 @@ from torch_rl.replay.replay import ReplayBuffer
 
 
 class Agent:
-    def __init__(self, gamma, epsilon, n_actions, input_dims,
+    def __init__(self, is_double, gamma, epsilon, n_actions, input_dims,
                  mem_size, batch_size, fc_dims, optimizer_type, eps_min=0.01, eps_dec=5e-7,
                  replace=1000, optimizer_args={}, randomized=False, goal=None):
+        self.is_double = is_double
         self.gamma = gamma
         self.epsilon = epsilon
         self.n_actions = n_actions
@@ -93,9 +94,14 @@ class Agent:
 
         q_pred = self.q_eval.forward(inputs)[indices, actions]
         q_next = self.q_next.forward(inputs_).max(dim=1)[0]
-
         q_next[dones] = 0.0
-        q_target = rewards + self.gamma * q_next
+
+        if self.is_double:
+            q_eval = self.q_eval.forward(inputs_)
+            max_actions = T.argmax(q_eval, dim=1)
+            q_target = rewards + self.gamma * q_next[indices, max_actions]
+        else:
+            q_target = rewards + self.gamma * q_next
 
         loss = self.q_eval.loss(q_target, q_pred).to(self.q_eval.device)
         loss.backward()
