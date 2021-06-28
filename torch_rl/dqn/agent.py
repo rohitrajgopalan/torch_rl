@@ -93,14 +93,16 @@ class Agent:
             inputs_ = states_.float()
 
         q_pred = self.q_eval.forward(inputs)[indices, actions]
-        q_next = self.q_next.forward(inputs_).max(dim=1)[0]
-        q_next[dones] = 0.0
 
         if self.is_double:
+            q_next = self.q_next.forward(states_)
+            q_next[dones] = 0.0
             q_eval = self.q_eval.forward(inputs_)
             max_actions = T.argmax(q_eval, dim=1)
             q_target = rewards + self.gamma * q_next[indices, max_actions]
         else:
+            q_next = self.q_next.forward(inputs_).max(dim=1)[0]
+            q_next[dones] = 0.0
             q_target = rewards + self.gamma * q_next
 
         loss = self.q_eval.loss(q_target, q_pred).to(self.q_eval.device)
