@@ -10,7 +10,7 @@ def run(env, n_games, tau, fc_dims, actor_optimizer_type, critic_optimizer_type,
         noise_clip=0.5):
     agent = Agent(env.observation_space.shape, env.action_space, tau, fc_dims, actor_optimizer_type,
                   critic_optimizer_type, actor_optimizer_args, critic_optimizer_args, gamma, max_size, batch_size,
-                  randomized, policy_update_interval, noise_std, noise_clip)
+                  policy_update_interval, noise_std, noise_clip)
 
     if type(n_games) == int:
         n_games_train = n_games

@@ -4,13 +4,13 @@ import numpy as np
 
 from torch_rl.ddpg.network import PolicyNetwork, ValueNetwork
 from torch_rl.noise.gaussian import GaussianExploration
-from torch_rl.replay.continuous import ContinuousReplayBuffer
+from torch_rl.replay.replay import ReplayBuffer
 
 
 class Agent:
     def __init__(self, input_dims, action_space, tau, fc_dims, actor_optimizer_type, critic_optimizer_type,
                  actor_optimizer_args={}, critic_optimizer_args={}, gamma=0.99,
-                 max_size=1000000, batch_size=64, randomized=False, policy_update_interval=2, noise_std=0.2,
+                 max_size=1000000, batch_size=64, policy_update_interval=2, noise_std=0.2,
                  noise_clip=0.5):
         self.gamma = gamma
         self.tau = tau
@@ -19,7 +19,7 @@ class Agent:
         self.noise_std = noise_std
         self.noise_clip = noise_clip
 
-        self.memory = ContinuousReplayBuffer(max_size, input_dims, action_space.shape[0], randomized)
+        self.memory = ReplayBuffer(max_size, input_dims, action_space.shape[0])
 
         self.noise = GaussianExploration(action_space)
 
