@@ -19,3 +19,14 @@ class NetworkOptimizer(enum.Enum):
             if optimizer_type.name.lower() == name.lower():
                 return optimizer_type
         return None
+
+
+class PolicyType(enum.Enum):
+    EPSILON_GREEDY = 0,
+    SOFTMAX = 1,
+    THOMPSON_SAMPLING = 2,
+    UCB = 3
+
+    @staticmethod
+    def all():
+        return [PolicyType.EPSILON_GREEDY, PolicyType.SOFTMAX, PolicyType.THOMPSON_SAMPLING, PolicyType.UCB]

@@ -1,6 +1,10 @@
 import torch.optim as optimizer
 
-from .types import NetworkOptimizer
+from .types import NetworkOptimizer, PolicyType
+from torch_rl.policy.epsilon_greedy import EpsilonGreedyPolicy
+from torch_rl.policy.softmax import SoftmaxPolicy
+from torch_rl.policy.thompson_sampling import ThompsonSamplingPolicy
+from torch_rl.policy.upper_confidence_bound import UpperConfidenceBoundPolicy
 
 
 def get_torch_optimizer(params, optimizer_type, optimizer_args):
@@ -56,6 +60,24 @@ def get_torch_optimizer(params, optimizer_type, optimizer_args):
 
         return optimizer.SGD(params, lr=learning_rate, momentum=momentum, weight_decay=weight_decay,
                              dampening=dampening, nesterov=nesterov)
+
+
+def choose_policy(num_actions, policy_type, policy_args):
+    if policy_type == PolicyType.EPSILON_GREEDY:
+        enable_decay = policy_args['enable_decay'] if 'enable_decay' in policy_args else True
+        eps_start = policy_args['eps_start'] if 'eps_start' in policy_args else 1.0
+        eps_min = policy_args['eps_min'] if 'eps_min' in policy_args else 0.1
+        eps_dec = policy_args['eps_dec'] if 'eps_dec' in policy_args else 5e-7
+        return EpsilonGreedyPolicy(num_actions, enable_decay, eps_start, eps_min, eps_dec)
+    elif policy_type == PolicyType.SOFTMAX:
+        tau = policy_args['tau'] if 'tau' in policy_args else 1.0
+        return SoftmaxPolicy(num_actions, tau)
+    elif policy_type == PolicyType.THOMPSON_SAMPLING:
+        min_penalty = policy_args['min_penalty'] if 'min_penalty' in policy_args else 1
+        return ThompsonSamplingPolicy(num_actions, min_penalty)
+    elif policy_type == PolicyType.UCB:
+        confidence_factor = policy_args['confidence_factor'] if 'confidence_factor' in policy_args else 1
+        return UpperConfidenceBoundPolicy(num_actions, confidence_factor)
 
 
 def have_we_ran_out_of_time(env, current_t):
