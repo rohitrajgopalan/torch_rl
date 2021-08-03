@@ -1,101 +1,28 @@
-import numpy as np
-import torch as T
+import copy
+
 from gym.spaces import Discrete
-from .network import Network
 
 
 class ActionBlocker:
-    def __init__(self, input_dims, action_space, fc_dims, optimizer_type, optimizer_args, randomized_replay=False,
-                 mem_size=1000, min_penalty=0, batch_size=64):
+    def __init__(self, action_space, min_penalty=0):
         assert min_penalty > 0
+        assert type(action_space) == Discrete
         self.min_penalty = min_penalty
-        self.batch_size = batch_size
-        self.action_dim = 1 if type(action_space) == Discrete else action_space.shape[0]
-        self.network = Network(input_dims, self.action_dim, fc_dims, optimizer_type, optimizer_args)
-        self.randomized_replay = randomized_replay
-        self.confusion_matrix = {'t_p': 0, 'f_p': 0, 't_n': 0, 'f_n': 0}
-        self.mem_size = mem_size
-        self.mem_cntr = 0
-        if self.action_dim == 1:
-            self.actions = np.zeros(self.mem_size)
-        else:
-            self.actions = np.zeros((self.mem_size, self.action_dim))
-        self.states = np.zeros((self.mem_size, input_dims[0]))
-        self.actual_logits = np.zeros(self.mem_size)
         self.num_actions_blocked = 0
+        self.action_space = action_space
 
-    def block_action(self, state, action):
-        if self.action_dim == 1:
-            action = T.tensor([action], dtype=T.float32)
+    def block_action(self, env, action):
+        local_env = copy.deepcopy(env)
+        _, reward, _, _ = local_env.step(action)
+        return reward <= -self.min_penalty
+
+    def find_safe_action(self, env, initial_action):
+        if self.block_action(env, initial_action):
+            remaining_actions = [a for a in range(self.action_space.n) if a != initial_action]
+            for a in remaining_actions:
+                if not self.block_action(env, a):
+                    return a
+                self.num_actions_blocked += 1
+            return None
         else:
-            action = T.tensor(action, dtype=T.float32)
-
-        if not type(state) == np.ndarray:
-            state = np.array([state]).astype(np.float32)
-        state = T.tensor(state, dtype=T.float32)
-
-        results = T.round(self.network.forward(state, action))
-
-        return results.cpu().detach().numpy()[0] == 1
-
-    def update_confusion_matrix(self, state, action, pred_logit, reward):
-        index = self.mem_cntr % self.mem_size
-
-        self.num_actions_blocked += 1 if pred_logit == 1 else 0
-
-        actual_logit = 1 if reward <= -self.min_penalty else 0
-        self.states[index] = state
-        self.actions[index] = action
-        self.actual_logits[index] = actual_logit
-
-        if pred_logit != actual_logit:
-            if pred_logit == 0:
-                self.confusion_matrix['f_n'] += 1
-            else:
-                self.confusion_matrix['f_p'] += 1
-        else:
-            if pred_logit == 0:
-                self.confusion_matrix['t_n'] += 1
-            else:
-                self.confusion_matrix['t_p'] += 1
-
-        self.mem_cntr += 1
-
-    def learn(self):
-        if self.mem_cntr < self.batch_size:
-            pass
-
-        max_mem = min(self.mem_cntr, self.mem_size)
-
-        if self.randomized_replay:
-            batch = np.random.choice(max_mem, self.batch_size, replace=False)
-        else:
-            batch = np.arange(self.batch_size)
-
-        states = self.states[batch]
-        actions = self.actions[batch]
-        y_true = self.actual_logits[batch]
-
-        states = T.tensor(states).to(self.network.device)
-        actions = T.tensor(actions).to(self.network.device)
-        y_true = T.tensor(y_true).to(self.network.device)
-
-        self.network.optimizer.zero_grad()
-        y_pred = T.round(self.network.forward(states, actions))
-        loss = self.network.loss(y_true, y_pred).to(self.network.device)
-        loss.backward()
-        self.network.optimizer.step()
-
-    def reset_confusion_matrix(self):
-        self.confusion_matrix = {'t_p': 0, 'f_p': 0, 't_n': 0, 'f_n': 0}
-        self.num_actions_blocked = 0
-
-    def get_precision_and_recall(self):
-        true_positives = self.confusion_matrix['t_p']
-        false_positives = self.confusion_matrix['f_p']
-        false_negatives = self.confusion_matrix['f_n']
-
-        precision = true_positives / (true_positives + false_positives)
-        recall = true_positives / (true_positives + false_negatives)
-
-        return precision, recall
+            return initial_action
