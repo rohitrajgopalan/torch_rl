@@ -53,9 +53,9 @@ class Agent:
         return self.policy.get_probs(values=q_values_arr)
 
     def get_weighted_sum(self, q_values_arr):
-        policy = self.prepare_policy(q_values_arr)
         q_values_arr = q_values_arr.detach().numpy()
-        return T.tensor(np.sum(policy * q_values_arr, axis=1))
+        policy = self.prepare_policy(q_values_arr)
+        return T.tensor(np.sum(policy * q_values_arr, axis=1, dtype=np.float32))
 
     def determine_actions_for_next_state_batch(self, next_states):
         next_actions = np.zeros(next_states.shape[0], dtype=np.int64)
@@ -99,6 +99,7 @@ class Agent:
 
         q_pred = self.q_eval.forward(inputs)[indices, actions]
         q_next = self.q_next.forward(inputs_)
+        q_next[dones] = 0.0
 
         if self.is_double:
             q_eval = self.q_eval.forward(states_)
@@ -107,6 +108,7 @@ class Agent:
             elif self.algorithm_type == TDAlgorithmType.Q:
                 next_q_value = q_next[indices, T.argmax(q_eval, dim=1)]
             elif self.algorithm_type == TDAlgorithmType.EXPECTED_SARSA:
+                q_eval[dones] = 0.0
                 next_q_value = self.get_weighted_sum(q_eval)
             else:
                 next_q_value = q_next[indices, actions]
@@ -119,7 +121,6 @@ class Agent:
                 next_q_value = self.get_weighted_sum(q_next)
             else:
                 next_q_value = q_next[indices, actions]
-        q_next[dones] = 0.0
         q_target = rewards + self.gamma * next_q_value
 
         loss = self.q_eval.loss(q_target, q_pred).to(self.q_eval.device)

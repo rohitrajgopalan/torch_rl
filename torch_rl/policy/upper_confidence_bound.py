@@ -22,12 +22,12 @@ class UpperConfidenceBoundPolicy(Policy):
     def get_action(self, train, **args):
         values = self.total_rewards / (self.num_called + 1)
         if train:
-            values += (self.confidence_factor * np.sqrt(np.log(self.t) / (self.num_called + 1)))
+            values += (self.confidence_factor * np.sqrt(np.log(self.t+1) / (self.num_called + 1)))
         return np.random.choice(self.actions_with_max_value(values))
 
     def get_probs(self, **args):
         ucb_values = self.total_rewards / (self.num_called + 1)
-        ucb_values += (self.confidence_factor * np.sqrt(np.log(self.t) / (self.num_called + 1)))
+        ucb_values += (self.confidence_factor * np.sqrt(np.log(self.t+1) / (self.num_called + 1)))
 
         actions_with_max_ucb_value = self.actions_with_max_value(ucb_values)
         policy_single = np.zeros((self.num_actions,))

@@ -14,7 +14,7 @@ class SoftmaxPolicy(Policy):
         values = args['values']
         values = values/self.tau
 
-        return F.softmax(T.tensor(values)).detach().numpy()
+        return F.softmax(T.tensor(values), dim=1).detach().numpy()
 
     def get_action(self, train, **args):
         if train:
