@@ -30,3 +30,21 @@ class PolicyType(enum.Enum):
     @staticmethod
     def all():
         return [PolicyType.EPSILON_GREEDY, PolicyType.SOFTMAX, PolicyType.THOMPSON_SAMPLING, PolicyType.UCB]
+
+
+class TDAlgorithmType(enum.Enum):
+    SARSA = 0
+    Q = 1
+    EXPECTED_SARSA = 2
+    MCQ = 3
+
+    @staticmethod
+    def all():
+        return [TDAlgorithmType.SARSA, TDAlgorithmType.Q, TDAlgorithmType.EXPECTED_SARSA, TDAlgorithmType.MCQ]
+
+    @staticmethod
+    def get_type_by_name(name):
+        for algorithm_type in TDAlgorithmType.all():
+            if algorithm_type.name.lower() == name.lower():
+                return algorithm_type
+        return None
