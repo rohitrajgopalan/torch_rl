@@ -95,29 +95,11 @@ def get_hidden_layer_sizes(fc_dims):
 
 def get_next_discrete_action(agent, env, observation, train=True, enable_action_blocking=False, action_blocker=None):
     original_action = agent.choose_action(observation, train=train)
-    actual_action = None
     action_blocked = False
 
     if enable_action_blocking:
-        pred_logit = action_blocker.block_action(observation, original_action)
-        _, _, reward, _ = env.step(original_action)
-        action_blocker.update_confusion_matrix(observation, original_action, int(pred_logit), reward)
-        if pred_logit:
-            action_blocked = True
-            blocked_actions = [original_action]
-            while len(blocked_actions) < env.action_space.n:
-                action = agent.choose_action(observation, train=train)
-                pred_logit = action_blocker.block_action(observation, action)
-                _, _, reward, _ = env.step(action)
-                action_blocker.update_confusion_matrix(observation, action, int(pred_logit), reward)
-                if pred_logit:
-                    action_blocked = True
-                    blocked_actions.append(action)
-                else:
-                    actual_action = action
-                    break
-        else:
-            actual_action = original_action
+        actual_action = action_blocker.find_safe_action(env, original_action)
+        action_blocked = (actual_action is None or actual_action != original_action)
     else:
         actual_action = original_action
 
