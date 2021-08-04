@@ -1,5 +1,6 @@
 import numpy as np
 
+
 class Policy:
     def __init__(self, num_actions):
         self.num_actions = num_actions
@@ -22,4 +23,10 @@ class Policy:
         pass
 
     def get_probs(self, **args):
+        pass
+
+    def save_snapshot(self, file_name):
+        pass
+
+    def load_snapshot(self, file_name):
         pass

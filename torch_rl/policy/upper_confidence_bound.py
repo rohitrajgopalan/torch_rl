@@ -1,4 +1,5 @@
 import numpy as np
+import math
 
 from .policy import Policy
 
@@ -19,14 +20,14 @@ class UpperConfidenceBoundPolicy(Policy):
         self.num_called[action] += 1
 
     def get_action(self, train, **args):
-        values = self.total_rewards / self.num_called
+        values = self.total_rewards / (self.num_called + 1)
         if train:
-            values += (self.confidence_factor * np.sqrt(np.log(self.t) / self.num_called))
+            values += (self.confidence_factor * np.sqrt(np.log(self.t) / (self.num_called + 1)))
         return np.random.choice(self.actions_with_max_value(values))
 
     def get_probs(self, **args):
-        ucb_values = self.total_rewards / self.num_called
-        ucb_values += (self.confidence_factor * np.sqrt(np.log(self.t) / self.num_called))
+        ucb_values = self.total_rewards / (self.num_called + 1)
+        ucb_values += (self.confidence_factor * np.sqrt(np.log(self.t) / (self.num_called + 1)))
 
         actions_with_max_ucb_value = self.actions_with_max_value(ucb_values)
         policy_single = np.zeros((self.num_actions,))
@@ -39,3 +40,11 @@ class UpperConfidenceBoundPolicy(Policy):
             policy_2d[i] = policy_single
 
         return policy_2d
+
+    def save_snapshot(self, file_name):
+        np.save(file='{0}_total_rewards'.format(file_name), arr=self.total_rewards)
+        np.save(file='{0}_num_called'.format(file_name), arr=self.num_called)
+
+    def load_snapshot(self, file_name):
+        self.total_rewards = np.load(file='{0}_total_rewards'.format(file_name))
+        self.num_called = np.load(file='{0}_num_called'.format(file_name))
