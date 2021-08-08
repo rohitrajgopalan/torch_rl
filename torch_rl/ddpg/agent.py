@@ -3,7 +3,7 @@ import torch as T
 import torch.nn.functional as F
 from .network import PolicyNetwork, ValueNetwork
 from torch_rl.noise.ou import OUNoise
-from torch_rl.replay.continuous import ContinuousReplayBuffer
+from torch_rl.replay.replay import ReplayBuffer
 
 
 class Agent:
@@ -16,7 +16,7 @@ class Agent:
 
         self.noise = OUNoise(action_space, mu=np.zeros(action_space.shape))
 
-        self.memory = ContinuousReplayBuffer(max_size, input_dims, action_space.shape[0], randomized)
+        self.memory = ReplayBuffer(max_size, input_dims, action_space.shape[0], randomized)
 
         self.actor = PolicyNetwork(input_dims, action_space.shape[0], fc_dims, actor_optimizer_type,
                                    actor_optimizer_args)

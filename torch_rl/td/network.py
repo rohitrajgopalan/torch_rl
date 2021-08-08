@@ -3,9 +3,9 @@ import torch.nn as nn
 from torch_rl.utils.utils import get_torch_optimizer, get_hidden_layer_sizes
 
 
-class Network(nn.Module):
+class TDNetwork(nn.Module):
     def __init__(self, num_inputs, n_actions, fc_dims, optimizer_type, optimizer_args={}):
-        super(Network, self).__init__()
+        super(TDNetwork, self).__init__()
 
         fc1_dims, fc2_dims = get_hidden_layer_sizes(fc_dims)
 

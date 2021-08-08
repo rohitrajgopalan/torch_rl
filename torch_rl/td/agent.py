@@ -1,6 +1,6 @@
 import numpy as np
 import torch as T
-from .network import Network
+from .network import TDNetwork
 from torch_rl.replay.replay import ReplayBuffer
 from torch_rl.utils.utils import choose_policy
 from torch_rl.utils.types import PolicyType, TDAlgorithmType
@@ -26,13 +26,13 @@ class Agent:
         if self.goal is not None:
             if not type(self.goal) == np.ndarray:
                 self.goal = np.array([self.goal]).astype(np.float32)
-            self.q_eval = Network(self.input_dims[0] + self.goal.shape[0], self.n_actions, fc_dims, optimizer_type,
-                                  optimizer_args)
-            self.q_next = Network(self.input_dims[0] + self.goal.shape[0], self.n_actions, fc_dims, optimizer_type,
-                                  optimizer_args)
+            self.q_eval = TDNetwork(self.input_dims[0] + self.goal.shape[0], self.n_actions, fc_dims, optimizer_type,
+                                    optimizer_args)
+            self.q_next = TDNetwork(self.input_dims[0] + self.goal.shape[0], self.n_actions, fc_dims, optimizer_type,
+                                    optimizer_args)
         else:
-            self.q_eval = Network(self.input_dims[0], self.n_actions, fc_dims, optimizer_type, optimizer_args)
-            self.q_next = Network(self.input_dims[0], self.n_actions, fc_dims, optimizer_type, optimizer_args)
+            self.q_eval = TDNetwork(self.input_dims[0], self.n_actions, fc_dims, optimizer_type, optimizer_args)
+            self.q_next = TDNetwork(self.input_dims[0], self.n_actions, fc_dims, optimizer_type, optimizer_args)
 
         self.memory = ReplayBuffer(mem_size, input_dims, goal=self.goal)
         self.loss_history = []
