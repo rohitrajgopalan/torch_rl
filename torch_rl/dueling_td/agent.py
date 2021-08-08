@@ -50,12 +50,12 @@ class Agent:
         advantages = advantage.detach().numpy().squeeze()
         return self.policy.get_action(train, values=advantages)
 
-    def prepare_policy(self, q_values_arr):
-        return self.policy.get_probs(values=q_values_arr)
+    def prepare_policy(self, q_values_arr, next_states):
+        return self.policy.get_probs(values=q_values_arr, next_states=next_states)
 
-    def get_weighted_sum(self, q_values_arr):
+    def get_weighted_sum(self, q_values_arr, next_states):
         q_values_arr = q_values_arr.detach().numpy()
-        policy = self.prepare_policy(q_values_arr)
+        policy = self.prepare_policy(q_values_arr, next_states)
         return T.tensor(np.sum(policy * q_values_arr, axis=1, dtype=np.float32))
 
     def determine_actions_for_next_state_batch(self, next_states, q_values_arr=None):
@@ -121,7 +121,7 @@ class Agent:
                 next_q_value = q_next[indices, T.argmax(q_eval, dim=1)]
             elif self.algorithm_type == TDAlgorithmType.EXPECTED_SARSA:
                 q_eval[dones] = 0.0
-                next_q_value = self.get_weighted_sum(q_eval)
+                next_q_value = self.get_weighted_sum(q_eval, new_state)
             else:
                 next_q_value = q_next[indices, actions]
         else:
@@ -130,7 +130,7 @@ class Agent:
             elif self.algorithm_type == TDAlgorithmType.Q:
                 next_q_value = q_next[indices, T.argmax(q_next, dim=1)]
             elif self.algorithm_type == TDAlgorithmType.EXPECTED_SARSA:
-                next_q_value = self.get_weighted_sum(q_next)
+                next_q_value = self.get_weighted_sum(q_next, new_state)
             else:
                 next_q_value = q_next[indices, actions]
 

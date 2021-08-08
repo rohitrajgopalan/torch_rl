@@ -49,12 +49,12 @@ class Agent:
         actions = self.q_eval.forward(inputs).detach().numpy().squeeze()
         return self.policy.get_action(train, values=actions)
 
-    def prepare_policy(self, q_values_arr):
-        return self.policy.get_probs(values=q_values_arr)
+    def prepare_policy(self, q_values_arr, next_states):
+        return self.policy.get_probs(values=q_values_arr, next_states=next_states)
 
-    def get_weighted_sum(self, q_values_arr):
+    def get_weighted_sum(self, q_values_arr, next_states):
         q_values_arr = q_values_arr.detach().numpy()
-        policy = self.prepare_policy(q_values_arr)
+        policy = self.prepare_policy(q_values_arr, next_states)
         return T.tensor(np.sum(policy * q_values_arr, axis=1, dtype=np.float32))
 
     def determine_actions_for_next_state_batch(self, next_states, q_values_arr=None):
