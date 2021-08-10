@@ -46,7 +46,7 @@ class Agent:
             inputs = T.cat([state, goal], dim=1)
         else:
             inputs = state
-        actions = self.q_eval.forward(inputs).detach().numpy().squeeze()
+        actions = self.q_eval.forward(inputs).cpu().detach().numpy().squeeze()
         return self.policy.get_action(train, values=actions)
 
     def prepare_policy(self, q_values_arr, next_states):

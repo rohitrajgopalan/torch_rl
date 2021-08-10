@@ -47,7 +47,7 @@ class Agent:
         else:
             inputs = state
         _, advantage = self.q_eval.forward(inputs)
-        advantages = advantage.detach().numpy().squeeze()
+        advantages = advantage.cpu().detach().numpy().squeeze()
         return self.policy.get_action(train, values=advantages)
 
     def prepare_policy(self, q_values_arr, next_states):
