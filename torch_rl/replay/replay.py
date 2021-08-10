@@ -2,10 +2,9 @@ import numpy as np
 
 
 class ReplayBuffer:
-    def __init__(self, max_size, input_shape, n_action_dims=1, randomized=False, goal=None):
+    def __init__(self, max_size, input_shape, n_action_dims=1, goal=None):
         self.mem_size = max_size
         self.mem_cntr = 0
-        self.randomized = randomized
         self.state_memory = np.zeros((self.mem_size, *input_shape), dtype=np.float32)
         self.new_state_memory = np.zeros((self.mem_size, *input_shape), dtype=np.float32)
 
