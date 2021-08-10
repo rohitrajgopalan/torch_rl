@@ -6,10 +6,10 @@ from torch_rl.utils.utils import have_we_ran_out_of_time
 
 def run(env, n_games, tau, fc_dims, actor_optimizer_type, critic_optimizer_type,
         actor_optimizer_args={}, critic_optimizer_args={}, gamma=0.99,
-        max_size=1000000, batch_size=64, randomized=False):
+        max_size=1000000, batch_size=64, goal=None):
     agent = Agent(env.observation_space.shape, env.action_space, tau, fc_dims, actor_optimizer_type,
                   critic_optimizer_type, actor_optimizer_args, critic_optimizer_args, gamma, max_size,
-                  batch_size, randomized)
+                  batch_size, goal)
 
     if type(n_games) == int:
         n_games_train = n_games
@@ -47,8 +47,14 @@ def run(env, n_games, tau, fc_dims, actor_optimizer_type, critic_optimizer_type,
         num_time_steps_train += t
 
     if n_games_test == 0:
-        return num_time_steps_train, np.mean(scores_train), 0, -1, \
-               np.mean(agent.policy_loss_history), np.mean(agent.value_loss_history)
+        return {
+            'num_time_steps_train': num_time_steps_train,
+            'avg_score_train': np.mean(scores_train),
+            'num_time_steps_test': 0,
+            'avg_score_test': -1,
+            'avg_policy_loss': np.mean(agent.policy_loss_history),
+            'avg_value_loss': np.mean(agent.value_loss_history),
+        }
     else:
         scores_test = np.zeros(n_games_test)
 
@@ -69,4 +75,11 @@ def run(env, n_games, tau, fc_dims, actor_optimizer_type, critic_optimizer_type,
             scores_train[i] = score_test
             num_time_steps_train += t
 
-        return num_time_steps_train, np.mean(scores_train), num_time_steps_test, np.mean(scores_test), np.mean(agent.policy_loss_history), np.mean(agent.value_loss_history)
+        return {
+            'num_time_steps_train': num_time_steps_train,
+            'avg_score_train': np.mean(scores_train),
+            'num_time_steps_test': num_time_steps_test,
+            'avg_score_test': np.mean(scores_test),
+            'avg_policy_loss': np.mean(agent.policy_loss_history),
+            'avg_value1_loss': np.mean(agent.value_loss_history)
+        }

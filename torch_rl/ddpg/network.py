@@ -5,11 +5,11 @@ from torch_rl.utils.utils import get_torch_optimizer, get_hidden_layer_sizes
 
 
 class PolicyNetwork(nn.Module):
-    def __init__(self, input_dim, n_actions, fc_dims, optimizer_type, optimizer_args, init_w=3e-3):
+    def __init__(self, num_inputs, n_actions, fc_dims, optimizer_type, optimizer_args, init_w=3e-3):
         super(PolicyNetwork, self).__init__()
 
         fc1_dims, fc2_dims = get_hidden_layer_sizes(fc_dims)
-        self.fc1 = nn.Linear(*input_dim, fc1_dims)
+        self.fc1 = nn.Linear(num_inputs, fc1_dims)
         self.fc2 = nn.Linear(fc1_dims, fc2_dims)
         self.fc3 = nn.Linear(fc2_dims, n_actions)
 
@@ -28,12 +28,12 @@ class PolicyNetwork(nn.Module):
 
 
 class ValueNetwork(nn.Module):
-    def __init__(self, input_dim, action_dim, fc_dims, optimizer_type, optimizer_args, init_w=3e-3):
+    def __init__(self, num_inputs, action_dim, fc_dims, optimizer_type, optimizer_args, init_w=3e-3):
         super(ValueNetwork, self).__init__()
 
         fc1_dims, fc2_dims = get_hidden_layer_sizes(fc_dims)
 
-        self.fc1 = nn.Linear(input_dim[0] + action_dim[0], fc1_dims)
+        self.fc1 = nn.Linear(num_inputs + action_dim[0], fc1_dims)
         self.fc2 = nn.Linear(fc1_dims, fc2_dims)
         self.fc3 = nn.Linear(fc2_dims, 1)
 
