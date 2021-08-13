@@ -20,10 +20,10 @@ def run_with_td(env, n_games, learning_type, heuristic_func, use_model_only,
                 algorithm_type, is_double, gamma, mem_size, batch_size, fc_dims,
                 optimizer_type, policy_type, policy_args={},
                 replace=1000, optimizer_args={}, enable_action_blocking=False,
-                min_penalty=0, goal=None):
+                min_penalty=0, goal=None, add_conservative_loss=False, alpha=0.001):
     agent = HeuristicWithTD(heuristic_func, use_model_only, algorithm_type, is_double, gamma, mem_size, batch_size,
                             fc_dims, optimizer_type, policy_type, policy_args, replace, optimizer_args,
-                            enable_action_blocking, min_penalty, goal)
+                            enable_action_blocking, min_penalty, goal, add_conservative_loss, alpha)
     return run(env, n_games, agent, learning_type, enable_action_blocking, min_penalty)
 
 
@@ -31,11 +31,11 @@ def run_with_dueling_td(env, n_games, learning_type, heuristic_func, use_model_o
                         algorithm_type, is_double, gamma, mem_size, batch_size, fc_dims,
                         optimizer_type, policy_type, policy_args={},
                         replace=1000, optimizer_args={}, enable_action_blocking=False,
-                        min_penalty=0, goal=None):
+                        min_penalty=0, goal=None, add_conservative_loss=False, alpha=0.001):
     agent = HeuristicWithDuelingTD(heuristic_func, use_model_only, algorithm_type, is_double, gamma, mem_size,
                                    batch_size,
                                    fc_dims, optimizer_type, policy_type, policy_args, replace, optimizer_args,
-                                   enable_action_blocking, min_penalty, goal)
+                                   enable_action_blocking, min_penalty, goal, add_conservative_loss, alpha)
     return run(env, n_games, agent, learning_type, enable_action_blocking, min_penalty)
 
 

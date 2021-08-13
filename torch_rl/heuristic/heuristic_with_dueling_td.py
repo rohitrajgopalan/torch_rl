@@ -2,6 +2,7 @@ import math
 
 import numpy as np
 import torch as T
+import torch.nn.functional as F
 
 from torch_rl.dueling_td.agent import DuelingTDAgent
 from .heuristic_with_ml import HeuristicWithML
@@ -11,11 +12,13 @@ from ..utils.types import TDAlgorithmType, PolicyType, LearningType
 class HeuristicWithDuelingTD(HeuristicWithML, DuelingTDAgent):
     def __init__(self, heuristic_func, use_model_only, algorithm_type, is_double, gamma, n_actions, input_dims,
                  mem_size, batch_size, fc_dims, optimizer_type, policy_type, policy_args={},
-                 replace=1000, optimizer_args={}, goal=None):
+                 replace=1000, optimizer_args={}, goal=None, add_conservative_loss=False, alpha=0.001):
         HeuristicWithML.__init__(self, heuristic_func, use_model_only)
         DuelingTDAgent.__init__(self, algorithm_type, is_double, gamma, n_actions, input_dims, mem_size, batch_size,
                                 fc_dims,
                                 optimizer_type, policy_type, policy_args, replace, optimizer_args, goal)
+        self.add_conservative_loss = add_conservative_loss
+        self.alpha = alpha
 
     def optimize(self, env, learning_type):
         num_updates = int(math.ceil(self.memory.mem_cntr / self.batch_size))
@@ -76,6 +79,10 @@ class HeuristicWithDuelingTD(HeuristicWithML, DuelingTDAgent):
                     next_q_value = q_next[indices, actions]
             q_target = rewards + self.gamma * next_q_value
             loss = self.q_eval.loss(q_target, q_pred)
+
+            if self.add_conservative_loss:
+                loss += (self.alpha * self.get_conservative_loss(inputs, actions))
+
             loss.backward()
 
             self.q_next.load_state_dict(self.q_eval.state_dict())
@@ -112,3 +119,18 @@ class HeuristicWithDuelingTD(HeuristicWithML, DuelingTDAgent):
 
     def store_transition(self, state, action, reward, state_, done):
         DuelingTDAgent.store_transition(self, state, action, reward, state_, done)
+
+    def get_conservative_loss(self, inputs, actions):
+        V_s, A_s = self.q_eval.forward(inputs)
+        V_s_, A_s_ = self.q_next.forward(inputs)
+        q_values = T.add(V_s,
+                       (A_s - A_s.mean(dim=1, keepdim=True)))
+        q_next = T.add(V_s_, (A_s_ - A_s_.mean(dim=1, keepdim=True)))
+
+        logsumexp = T.logsumexp(q_values, dim=1, keepdim=True)
+
+        # estimate action-values under data distribution
+        one_hot = F.one_hot(actions.view(-1), num_classes=self.n_actions)
+        data_values = (q_next * one_hot).sum(dim=1, keepdim=True)
+
+        return (logsumexp - data_values).mean()
