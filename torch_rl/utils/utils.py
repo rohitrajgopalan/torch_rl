@@ -108,3 +108,17 @@ def get_next_discrete_action(agent, env, observation, train=True, enable_action_
         actual_action = original_action
 
     return original_action, action_blocked, actual_action
+
+
+def get_next_discrete_action_heuristic(agent, learning_type, env, observation, train=True, enable_action_blocking=False,
+                                       action_blocker=None):
+    original_action = agent.get_action(env, learning_type, observation, train)
+    action_blocked = False
+
+    if enable_action_blocking:
+        actual_action = action_blocker.find_safe_action(env, original_action)
+        action_blocked = (actual_action is None or actual_action != original_action)
+    else:
+        actual_action = original_action
+
+    return original_action, action_blocked, actual_action

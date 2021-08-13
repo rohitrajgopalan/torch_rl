@@ -48,3 +48,9 @@ class TDAlgorithmType(enum.Enum):
             if algorithm_type.name.lower() == name.lower():
                 return algorithm_type
         return None
+
+
+class LearningType(enum.Enum):
+    OFFLINE = 0,
+    ONLINE = 1,
+    BOTH = 2

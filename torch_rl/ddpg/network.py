@@ -26,6 +26,12 @@ class PolicyNetwork(nn.Module):
         x = F.relu(self.fc2(x))
         return T.tanh(self.fc3(x))
 
+    def save_model(self, model_file_name):
+        T.save(self.state_dict(), model_file_name)
+
+    def load_model(self, model_file_name):
+        self.load_state_dict(T.load(model_file_name))
+
 
 class ValueNetwork(nn.Module):
     def __init__(self, num_inputs, action_dim, fc_dims, optimizer_type, optimizer_args, init_w=3e-3):
@@ -50,3 +56,9 @@ class ValueNetwork(nn.Module):
         x = F.relu(self.fc1(x))
         x = F.relu(self.fc2(x))
         return self.fc3(x)
+
+    def save_model(self, model_file_name):
+        T.save(self.state_dict(), model_file_name)
+
+    def load_model(self, model_file_name):
+        self.load_state_dict(T.load(model_file_name))

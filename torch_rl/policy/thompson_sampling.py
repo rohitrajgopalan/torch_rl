@@ -55,3 +55,11 @@ class ThompsonSamplingPolicy(Policy):
                 for a in actions_with_max_beta_value:
                     probs[i, a] = 1 / len(actions_with_max_beta_value)
             return probs
+
+    def save_snapshot(self, file_name):
+        np.save(file='{0}_successes'.format(file_name), arr=self.successes)
+        np.save(file='{0}_failures'.format(file_name), arr=self.failures)
+
+    def load_snapshot(self, file_name):
+        self.successes = np.load(file='{0}_successes.npy'.format(file_name))
+        self.failures = np.load(file='{0}_failures.npy'.format(file_name))

@@ -142,3 +142,15 @@ class Agent:
 
         self.policy_loss_history.append(abs(actor_loss.item()))
         self.value_loss_history.append(critic_loss.item())
+
+    def load_model(self, model_name):
+        self.actor.load_model('{0}_actor'.format(model_name))
+        self.target_actor.load_model('{0}_target_actor'.format(model_name))
+        self.critic.load_model('{0}_critic'.format(model_name))
+        self.target_critic.load_model('{0}_target_critic'.format(model_name))
+
+    def save_model(self, model_name):
+        self.actor.save_model('{0}_actor'.format(model_name))
+        self.target_actor.save_model('{0}_target_actor'.format(model_name))
+        self.critic.save_model('{0}_critic'.format(model_name))
+        self.target_critic.save_model('{0}_target_critic'.format(model_name))

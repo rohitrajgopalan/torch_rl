@@ -6,7 +6,7 @@ from torch_rl.utils.utils import choose_policy
 from torch_rl.utils.types import PolicyType, TDAlgorithmType
 
 
-class Agent:
+class TDAgent:
     def __init__(self, algorithm_type, is_double, gamma, n_actions, input_dims,
                  mem_size, batch_size, fc_dims, optimizer_type, policy_type, policy_args={},
                  replace=1000, optimizer_args={}, goal=None):
@@ -108,14 +108,14 @@ class Agent:
         q_next[dones] = 0.0
 
         if self.is_double:
-            q_eval = self.q_eval.forward(states_)
+            q_eval = self.q_eval.forward(inputs_)
             if self.algorithm_type == TDAlgorithmType.SARSA:
                 next_q_value = q_next[indices, self.determine_actions_for_next_state_batch(new_state, q_eval)]
             elif self.algorithm_type == TDAlgorithmType.Q:
                 next_q_value = q_next[indices, T.argmax(q_eval, dim=1)]
             elif self.algorithm_type == TDAlgorithmType.EXPECTED_SARSA:
                 q_eval[dones] = 0.0
-                next_q_value = self.get_weighted_sum(q_eval)
+                next_q_value = self.get_weighted_sum(q_eval, new_state)
             else:
                 next_q_value = q_next[indices, actions]
         else:
@@ -124,7 +124,7 @@ class Agent:
             elif self.algorithm_type == TDAlgorithmType.Q:
                 next_q_value = q_next[indices, T.argmax(q_next, dim=1)]
             elif self.algorithm_type == TDAlgorithmType.EXPECTED_SARSA:
-                next_q_value = self.get_weighted_sum(q_next)
+                next_q_value = self.get_weighted_sum(q_next, new_state)
             else:
                 next_q_value = q_next[indices, actions]
         q_target = rewards + self.gamma * next_q_value
@@ -144,3 +144,13 @@ class Agent:
                 self.policy.update(reward=reward)
 
         self.loss_history.append(loss.item())
+
+    def load_model(self, model_name):
+        self.q_eval.load_model('{0}_q_eval'.format(model_name))
+        self.q_next.load_model('{0}_q_next'.format(model_name))
+        self.policy.load_snapshot(model_name)
+
+    def save_model(self, model_name):
+        self.q_eval.save_model('{0}_q_eval'.format(model_name))
+        self.q_next.save_model('{0}_q_next'.format(model_name))
+        self.policy.save_snapshot(model_name)

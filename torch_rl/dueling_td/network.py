@@ -28,3 +28,9 @@ class DuelingTDNetwork(nn.Module):
         A = self.A(flat2)
 
         return V, A
+
+    def save_model(self, model_file_name):
+        T.save(self.state_dict(), model_file_name)
+
+    def load_model(self, model_file_name):
+        self.load_state_dict(T.load(model_file_name))

@@ -58,5 +58,5 @@ class UpperConfidenceBoundPolicy(Policy):
         np.save(file='{0}_num_called'.format(file_name), arr=self.num_called)
 
     def load_snapshot(self, file_name):
-        self.total_rewards = np.load(file='{0}_total_rewards'.format(file_name))
-        self.num_called = np.load(file='{0}_num_called'.format(file_name))
+        self.total_rewards = np.load(file='{0}_total_rewards.npy'.format(file_name))
+        self.num_called = np.load(file='{0}_num_called.npy'.format(file_name))

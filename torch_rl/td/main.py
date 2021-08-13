@@ -1,7 +1,7 @@
 import numpy as np
 from gym.spaces import Box
 
-from .agent import Agent
+from .agent import TDAgent
 from torch_rl.action_blocker.action_blocker import ActionBlocker
 from torch_rl.utils.utils import have_we_ran_out_of_time, get_next_discrete_action
 
@@ -11,9 +11,9 @@ def run(env, n_games, algorithm_type, is_double, gamma, mem_size, batch_size, fc
         replace=1000, optimizer_args={}, enable_action_blocking=False,
         min_penalty=0, goal=None):
     input_dims = env.observation_space.shape if type(env.observation_space) == Box else (1,)
-    agent = Agent(algorithm_type, is_double, gamma, env.action_space.n, input_dims,
-                  mem_size, batch_size, fc_dims, optimizer_type, policy_type, policy_args,
-                  replace, optimizer_args, goal)
+    agent = TDAgent(algorithm_type, is_double, gamma, env.action_space.n, input_dims,
+                    mem_size, batch_size, fc_dims, optimizer_type, policy_type, policy_args,
+                    replace, optimizer_args, goal)
 
     if type(n_games) == int:
         n_games_train = n_games
@@ -46,7 +46,7 @@ def run(env, n_games, algorithm_type, is_double, gamma, mem_size, batch_size, fc
 
             observation_, reward, done, _ = env.step(action)
 
-            if enable_action_blocking and action_blocked:
+            if enable_action_blocking and action_blocked and reward > 0:
                 reward *= -1
             score += reward
 
@@ -101,9 +101,6 @@ def run(env, n_games, algorithm_type, is_double, gamma, mem_size, batch_size, fc
                     action = original_action
 
                 observation_, reward, done, _ = env.step(action)
-
-                if enable_action_blocking and action_blocked:
-                    reward *= -1
                 score += reward
 
                 t += 1

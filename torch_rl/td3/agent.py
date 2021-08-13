@@ -186,3 +186,19 @@ class Agent:
         self.policy_loss_history.append(abs(actor_loss.item()))
         self.value1_loss_history.append(critic_loss1.item())
         self.value2_loss_history.append(critic_loss2.item())
+
+    def load_model(self, model_name):
+        self.actor.load_model('{0}_actor'.format(model_name))
+        self.target_actor.load_model('{0}_target_actor'.format(model_name))
+        self.critic1.load_model('{0}_critic'.format(model_name))
+        self.critic2.load_model('{0}_critic'.format(model_name))
+        self.target_critic1.load_model('{0}_target_critic'.format(model_name))
+        self.target_critic2.load_model('{0}_target_critic'.format(model_name))
+
+    def save_model(self, model_name):
+        self.actor.save_model('{0}_actor'.format(model_name))
+        self.target_actor.save_model('{0}_target_actor'.format(model_name))
+        self.critic1.save_model('{0}_critic'.format(model_name))
+        self.critic2.save_model('{0}_critic'.format(model_name))
+        self.target_critic1.save_model('{0}_target_critic'.format(model_name))
+        self.target_critic2.save_model('{0}_target_critic'.format(model_name))
