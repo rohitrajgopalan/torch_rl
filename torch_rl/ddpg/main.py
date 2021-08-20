@@ -6,10 +6,10 @@ from torch_rl.utils.utils import have_we_ran_out_of_time
 
 def run(env, n_games, tau, fc_dims, actor_optimizer_type, critic_optimizer_type,
         actor_optimizer_args={}, critic_optimizer_args={}, gamma=0.99,
-        max_size=1000000, batch_size=64, goal=None):
+        max_size=1000000, batch_size=64, goal=None, assign_priority=False):
     agent = Agent(env.observation_space.shape, env.action_space, tau, fc_dims, actor_optimizer_type,
                   critic_optimizer_type, actor_optimizer_args, critic_optimizer_args, gamma, max_size,
-                  batch_size, goal)
+                  batch_size, goal, assign_priority)
 
     if type(n_games) == int:
         n_games_train = n_games
@@ -36,7 +36,7 @@ def run(env, n_games, tau, fc_dims, actor_optimizer_type, critic_optimizer_type,
             observation_, reward, done, _ = env.step(action)
             score_train += reward
 
-            agent.remember(observation, action, reward, observation_, done)
+            agent.store_transition(observation, action, reward, observation_, done, t)
             agent.learn()
 
             observation = observation_

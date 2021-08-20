@@ -21,7 +21,7 @@ class ReplayBuffer:
         else:
             self.goal_memory = None
 
-    def store_transition(self, state, action, reward, state_, done):
+    def store_transition(self, state, action, reward, state_, done, **args):
         index = self.mem_cntr % self.mem_size
         self.state_memory[index] = state
         self.action_memory[index] = action
@@ -31,7 +31,10 @@ class ReplayBuffer:
 
         self.mem_cntr += 1
 
-    def sample_buffer(self, batch_size=0, randomized=True, start=-1, end=-1):
+    def sample_buffer(self, batch_size=0, **args):
+        randomized = args['randomized'] if 'randomized' in args else False
+        start = args['start'] if 'start' in args else -1
+        end = args['end'] if 'end' in args else -1
         max_mem = min(self.mem_cntr, self.mem_size)
 
         if batch_size > 0:

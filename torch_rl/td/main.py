@@ -1,19 +1,18 @@
 import numpy as np
 from gym.spaces import Box
 
+from torch_rl.utils.utils import have_we_ran_out_of_time
 from .agent import TDAgent
-from torch_rl.action_blocker.action_blocker import ActionBlocker
-from torch_rl.utils.utils import have_we_ran_out_of_time, get_next_discrete_action
 
 
 def run(env, n_games, algorithm_type, is_double, gamma, mem_size, batch_size, fc_dims,
         optimizer_type, policy_type, policy_args={},
         replace=1000, optimizer_args={}, enable_action_blocking=False,
-        min_penalty=0, goal=None):
+        min_penalty=0, goal=None, assign_priority=False):
     input_dims = env.observation_space.shape if type(env.observation_space) == Box else (1,)
-    agent = TDAgent(algorithm_type, is_double, gamma, env.action_space.n, input_dims,
+    agent = TDAgent(algorithm_type, is_double, gamma, env.action_space, input_dims,
                     mem_size, batch_size, fc_dims, optimizer_type, policy_type, policy_args,
-                    replace, optimizer_args, goal)
+                    replace, optimizer_args, enable_action_blocking, min_penalty, goal, assign_priority)
 
     if type(n_games) == int:
         n_games_train = n_games
@@ -22,10 +21,6 @@ def run(env, n_games, algorithm_type, is_double, gamma, mem_size, batch_size, fc
         n_games_train, n_games_test = n_games
     else:
         raise ValueError('n_games should either be int or tuple')
-
-    action_blocker = None
-    if enable_action_blocking:
-        action_blocker = ActionBlocker(env.action_space, min_penalty)
 
     scores_train = np.zeros(n_games_train)
     num_time_steps_train = 0
@@ -36,21 +31,15 @@ def run(env, n_games, algorithm_type, is_double, gamma, mem_size, batch_size, fc
 
         t = 0
         while not done and not have_we_ran_out_of_time(env, t):
-            original_action, action_blocked, action = get_next_discrete_action(agent, env, observation,
-                                                                               True, enable_action_blocking,
-                                                                               action_blocker)
-
-            if action is None:
-                print('WARNING: No valid policy action found, running original action')
-                action = original_action
-
+            action = agent.choose_action(env, observation, True)
             observation_, reward, done, _ = env.step(action)
 
-            if enable_action_blocking and action_blocked and reward > 0:
+            if enable_action_blocking and agent.initial_action_blocked and reward > 0:
                 reward *= -1
             score += reward
 
-            agent.store_transition(observation, original_action, reward, observation_, done)
+            agent.store_transition(observation, agent.choose_policy_action(observation, True),
+                                   reward, observation_, done)
             agent.learn()
 
             observation = observation_
@@ -62,7 +51,7 @@ def run(env, n_games, algorithm_type, is_double, gamma, mem_size, batch_size, fc
 
     if n_games_test == 0:
         if enable_action_blocking:
-            num_actions_blocked = action_blocker.num_actions_blocked
+            num_actions_blocked = agent.action_blocker.num_actions_blocked
         else:
             num_actions_blocked = 0
 
@@ -77,8 +66,8 @@ def run(env, n_games, algorithm_type, is_double, gamma, mem_size, batch_size, fc
         }
     else:
         if enable_action_blocking:
-            num_actions_blocked_train = action_blocker.num_actions_blocked
-            action_blocker.num_actions_blocked = 0
+            num_actions_blocked_train = agent.action_blocker.num_actions_blocked
+            agent.action_blocker.num_actions_blocked = 0
         else:
             num_actions_blocked_train = 0
 
@@ -92,14 +81,7 @@ def run(env, n_games, algorithm_type, is_double, gamma, mem_size, batch_size, fc
 
             t = 0
             while not done and not have_we_ran_out_of_time(env, t):
-                original_action, action_blocked, action = get_next_discrete_action(agent, env, observation,
-                                                                                   False, enable_action_blocking,
-                                                                                   action_blocker)
-
-                if action is None:
-                    print('WARNING: No valid policy action found, running original action')
-                    action = original_action
-
+                action = agent.choose_action(env, observation, False)
                 observation_, reward, done, _ = env.step(action)
                 score += reward
 
@@ -109,7 +91,7 @@ def run(env, n_games, algorithm_type, is_double, gamma, mem_size, batch_size, fc
             num_time_steps_test += t
 
         if enable_action_blocking:
-            num_actions_blocked_test = action_blocker.num_actions_blocked
+            num_actions_blocked_test = agent.action_blocker.num_actions_blocked
         else:
             num_actions_blocked_test = 0
 

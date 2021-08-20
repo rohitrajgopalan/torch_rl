@@ -4,12 +4,13 @@ import torch.nn.functional as F
 from .network import PolicyNetwork, ValueNetwork
 from torch_rl.noise.ou import OUNoise
 from torch_rl.replay.replay import ReplayBuffer
+from torch_rl.replay.priority_replay import PriorityReplayBuffer
 
 
 class Agent:
     def __init__(self, input_dims, action_space, tau, fc_dims, actor_optimizer_type, critic_optimizer_type,
                  actor_optimizer_args={}, critic_optimizer_args={}, gamma=0.99,
-                 max_size=1000000, batch_size=64, goal=None):
+                 max_size=1000000, batch_size=64, goal=None, assign_priority=False):
         self.gamma = gamma
         self.tau = tau
         self.batch_size = batch_size
@@ -50,7 +51,10 @@ class Agent:
 
         self.update_network_parameters(soft_tau=1)
 
-        self.memory = ReplayBuffer(max_size, input_dims, action_space.shape[0], self.goal)
+        if assign_priority:
+            self.memory = PriorityReplayBuffer(max_size, input_dims, action_space.shape[0], self.goal)
+        else:
+            self.memory = ReplayBuffer(max_size, input_dims, action_space.shape[0], self.goal)
 
         self.policy_loss_history = []
         self.value_loss_history = []
@@ -86,8 +90,31 @@ class Agent:
         else:
             return np.clip(action, self.action_space.low, self.action_space.high)
 
-    def remember(self, state, action, reward, state_, done):
-        self.memory.store_transition(state, action, reward, state_, done)
+    def get_critic_value(self, observation, action, use_target=False):
+        state = T.tensor([observation], dtype=T.float).to(self.target_actor.device if use_target else self.actor.device)
+        if self.goal is not None:
+            goal = T.tensor([self.goal], dtype=T.float).to(self.target_actor.device if use_target else self.actor.device)
+            inputs = T.cat([state, goal], dim=1)
+        else:
+            inputs = state
+        action = T.tensor([action], dtype=T.float).to(self.target_actor.device if use_target else self.actor.device)
+        if use_target:
+            values = self.target_critic.forward(inputs, action).cpu().detach().numpy()
+        else:
+            values = self.critic.forward(inputs, action).cpu().detach().numpy()
+        return values.squeeze().item()
+
+    def store_transition(self, state, action, reward, state_, done, t=0):
+        self.memory.store_transition(state, action, reward, state_, done,
+                                     error_val=self.determine_error(state, action, reward, state_, done, t))
+
+    def determine_error(self, state, action, reward, state_, done, t=0):
+        done = int(done)
+        target_action = self.choose_action(state_, t, True)
+        next_critic_value = self.get_critic_value(state_, target_action, True)
+        old_critic_value = self.get_critic_value(state, action, False)
+
+        return reward + (self.gamma * next_critic_value * (1-done)) - old_critic_value
 
     def sample_memory(self):
         state, action, reward, state_, done, goals = self.memory.sample_buffer(self.batch_size)
@@ -124,7 +151,7 @@ class Agent:
         critic_value_[dones] = 0.0
         critic_value_ = critic_value_.view(-1)
 
-        target = rewards + self.gamma*critic_value_
+        target = rewards + self.gamma * critic_value_
         target = target.view(self.batch_size, 1)
 
         self.critic.optimizer.zero_grad()
@@ -154,3 +181,12 @@ class Agent:
         self.target_actor.save_model('{0}_target_actor'.format(model_name))
         self.critic.save_model('{0}_critic'.format(model_name))
         self.target_critic.save_model('{0}_target_critic'.format(model_name))
+
+    def apply_transfer_learning(self, td3_actor_model, td3_critic_model,
+                                td3_target_actor_model=None, td3_target_critic_model=None):
+        self.actor.load_model(td3_actor_model)
+        self.critic.load_model(td3_critic_model)
+        if td3_target_actor_model is not None:
+            self.target_actor.load_model(td3_target_actor_model)
+        if td3_target_critic_model is not None:
+            self.target_critic.load_model(td3_target_critic_model)

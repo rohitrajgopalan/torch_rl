@@ -2,18 +2,21 @@ import numpy as np
 import torch as T
 from .network import TDNetwork
 from torch_rl.replay.replay import ReplayBuffer
+from torch_rl.replay.priority_replay import PriorityReplayBuffer
 from torch_rl.utils.utils import choose_policy
 from torch_rl.utils.types import PolicyType, TDAlgorithmType
+from ..action_blocker.action_blocker import ActionBlocker
 
 
 class TDAgent:
-    def __init__(self, algorithm_type, is_double, gamma, n_actions, input_dims,
+    def __init__(self, algorithm_type, is_double, gamma, action_space, input_dims,
                  mem_size, batch_size, fc_dims, optimizer_type, policy_type, policy_args={},
-                 replace=1000, optimizer_args={}, goal=None):
+                 replace=1000, optimizer_args={}, enable_action_blocking=False,
+                 min_penalty=0, goal=None, assign_priority=False):
         self.algorithm_type = algorithm_type
         self.is_double = is_double
         self.gamma = gamma
-        self.n_actions = n_actions
+        self.n_actions = action_space.n
         self.input_dims = input_dims
         self.batch_size = batch_size
         self.policy_type = policy_type
@@ -34,10 +37,30 @@ class TDAgent:
             self.q_eval = TDNetwork(self.input_dims[0], self.n_actions, fc_dims, optimizer_type, optimizer_args)
             self.q_next = TDNetwork(self.input_dims[0], self.n_actions, fc_dims, optimizer_type, optimizer_args)
 
-        self.memory = ReplayBuffer(mem_size, input_dims, goal=self.goal)
+        if assign_priority:
+            self.memory = PriorityReplayBuffer(mem_size, input_dims, goal=self.goal)
+        else:
+            self.memory = ReplayBuffer(mem_size, input_dims, goal=self.goal)
         self.loss_history = []
 
-    def choose_action(self, observation, train=True):
+        self.enable_action_blocking = enable_action_blocking
+        self.action_blocker = None
+        if self.enable_action_blocking:
+            self.action_blocker = ActionBlocker(action_space, min_penalty)
+        self.initial_action_blocked = False
+
+    def choose_action(self, env, observation, train=True):
+        original_action = self.choose_policy_action(observation, train)
+        if self.enable_action_blocking:
+            actual_action = self.action_blocker.find_safe_action(env, original_action)
+            self.initial_action_blocked = (actual_action is None or actual_action != original_action)
+            if actual_action is None:
+                print('WARNING: No valid policy action found, running original action')
+            return original_action if actual_action is None else actual_action
+        else:
+            return original_action
+
+    def choose_policy_action(self, observation, train=True):
         if not type(observation) == np.ndarray:
             observation = np.array([observation]).astype(np.float32)
         state = T.tensor([observation], dtype=T.float32).to(self.q_eval.device)
@@ -66,12 +89,56 @@ class TDAgent:
         else:
             next_actions = np.zeros(next_states.shape[0], dtype=np.int64)
             for i, next_state in enumerate(next_states):
-                next_actions[i] = self.choose_action(next_state)
+                next_actions[i] = self.choose_policy_action(next_state)
 
         return T.tensor(next_actions)
 
     def store_transition(self, state, action, reward, state_, done):
-        self.memory.store_transition(state, action, reward, state_, done)
+        self.memory.store_transition(state, action, reward, state_, done,
+                                     error_val=self.determine_error(state, action, reward, state_, done))
+
+    def determine_error(self, state, action, reward, state_, done):
+        done = int(done)
+        if not type(state) == np.ndarray:
+            state = np.array([state]).astype(np.float32)
+            state_ = np.array([state_]).astype(np.float32)
+        stateT = T.tensor([state], dtype=T.float32).to(self.q_eval.device)
+        stateT_ = T.tensor([state_], dtype=T.float32).to(self.q_eval.device)
+        if self.goal is not None:
+            goal = T.tensor([self.goal], dtype=T.float32).to(self.q_eval.device)
+            inputs = T.cat([stateT, goal], dim=1)
+            inputs_ = T.cat([stateT_, goal], dim=1)
+        else:
+            inputs = stateT
+            inputs_ = stateT_
+        Q = self.q_eval.forward(inputs).cpu().detach().numpy().squeeze()
+        Q_ = self.q_next.forward(inputs_).cpu().detach().numpy().squeeze()
+
+        if self.is_double:
+            Q_eval = self.q_eval.forward(inputs_).cpu().detach().numpy().squeeze()
+            if self.algorithm_type == TDAlgorithmType.SARSA:
+                next_q_value = Q_[self.policy.get_action(True, values=Q_eval)]
+            elif self.algorithm_type == TDAlgorithmType.Q:
+                next_q_value = np.max(Q_eval)
+            elif self.algorithm_type == TDAlgorithmType.EXPECTED_SARSA:
+                Q_eval = Q_eval.reshape(-1, self.n_actions)
+                policy = self.policy.get_probs(values=Q_eval, next_states=np.array([state_]))
+                next_q_value = np.sum(policy * Q_eval, axis=1)[0]
+            else:
+                next_q_value = Q_[action]
+        else:
+            if self.algorithm_type == TDAlgorithmType.SARSA:
+                next_q_value = Q_[self.policy.get_action(True, values=Q_)]
+            elif self.algorithm_type == TDAlgorithmType.Q:
+                next_q_value = np.max(Q_)
+            elif self.algorithm_type == TDAlgorithmType.EXPECTED_SARSA:
+                Q_eval = Q_.reshape(-1, self.n_actions)
+                policy = self.policy.get_probs(values=Q_eval, next_states=np.array([state_]))
+                next_q_value = np.sum(policy * Q_eval, axis=1)[0]
+            else:
+                next_q_value = Q_[action]
+
+        return reward + (self.gamma * next_q_value * (1 - done)) - Q[action]
 
     def replace_target_network(self):
         if self.learn_step_counter % self.replace_target_cnt == 0:

@@ -10,12 +10,15 @@ from ..utils.types import TDAlgorithmType, PolicyType, LearningType
 
 
 class HeuristicWithTD(HeuristicWithML, TDAgent):
-    def __init__(self, heuristic_func, use_model_only, algorithm_type, is_double, gamma, n_actions, input_dims,
+    def __init__(self, heuristic_func, use_model_only, algorithm_type, is_double, gamma, action_space, input_dims,
                  mem_size, batch_size, fc_dims, optimizer_type, policy_type, policy_args={},
-                 replace=1000, optimizer_args={}, goal=None, add_conservative_loss=False, alpha=0.001):
-        HeuristicWithML.__init__(self, heuristic_func, use_model_only)
-        TDAgent.__init__(self, algorithm_type, is_double, gamma, n_actions, input_dims, mem_size, batch_size, fc_dims,
-                         optimizer_type, policy_type, policy_args, replace, optimizer_args, goal)
+                 replace=1000, optimizer_args={}, goal=None, enable_action_blocking=False,
+                 min_penalty=0, add_conservative_loss=False, alpha=0.001, **args):
+        HeuristicWithML.__init__(self, heuristic_func, use_model_only, action_space, enable_action_blocking, min_penalty,
+                                 **args)
+        TDAgent.__init__(self, algorithm_type, is_double, gamma, action_space, input_dims, mem_size, batch_size, fc_dims,
+                         optimizer_type, policy_type, policy_args, replace, optimizer_args, enable_action_blocking,
+                         min_penalty, goal, False)
         self.add_conservative_loss = add_conservative_loss
         self.alpha = alpha
 
@@ -108,8 +111,8 @@ class HeuristicWithTD(HeuristicWithML, TDAgent):
 
         return T.tensor(next_actions)
 
-    def predict_action(self, observation, train):
-        return TDAgent.choose_action(observation, train)
+    def predict_action(self, observation, train, **args):
+        return TDAgent.choose_policy_action(observation, train)
 
     def store_transition(self, state, action, reward, state_, done):
         TDAgent.store_transition(self, state, action, reward, state_, done)
