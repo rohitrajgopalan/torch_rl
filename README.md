@@ -11,10 +11,10 @@ https://deeplearningcourses.com/c/cutting-edge-artificial-intelligence <br />
 https://github.com/philtabor/Deep-Q-Learning-Paper-To-Code <br />
 https://github.com/philtabor/Actor-Critic-Methods-Paper-To-Code <br />
 
-Based from the above inspiration, I have created agents using DQN, Double DQN, Dueling DQN, Double Dueling DQN, PPO, REINFORCE, ActorCritic, DDPG, TD3 and SAC.
+Based from the above inspiration, I have created various deep RL agents including DDPG and TD3. On top of all of this, I have developed agents using Decision Trees where actions are determined based on the current state. On top of all of this, implementation has been added for these agents to learn with the assistance of a heuristic policy as Deep RL alone may not work quickly as possible. 
 The intent is for this library to work with OpenAI Gym style environments <br />
 
 Setting up the library is simple as follows <br />
 1. Navigate to the root of the torch_rl directory on your local machine on the terminal<br />
 2. Run python setup.py sdist <br />
-3. Run python -m pip install dist/torch-rl-8.0.tar.gz <br />
+3. Run python -m pip install dist/torch-rl-10.0.tar.gz <br />
