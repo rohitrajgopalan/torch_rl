@@ -40,26 +40,25 @@ def run_with_dueling_td(env, n_games, learning_type, heuristic_func, use_model_o
     return run(env, n_games, agent, learning_type)
 
 
-def run_with_ddpg(env, n_games, learning_type, heuristic_func, use_model_only, input_dims, action_space, tau, fc_dims,
+def run_with_ddpg(env, n_games, learning_type, heuristic_func, use_model_only, tau, fc_dims,
                   actor_optimizer_type,
                   critic_optimizer_type, actor_optimizer_args={}, critic_optimizer_args={}, gamma=0.99,
                   max_size=1000000, batch_size=64, goal=None, **args):
-    agent = HeuristicWithDDPG(heuristic_func, use_model_only, input_dims, action_space, tau, fc_dims,
-                              actor_optimizer_type,
+    agent = HeuristicWithDDPG(heuristic_func, use_model_only, env.observation_space.shape, env.action_space, tau,
+                              fc_dims, actor_optimizer_type,
                               critic_optimizer_type, actor_optimizer_args, critic_optimizer_args, gamma,
                               max_size, batch_size, goal, **args)
     return run(env, n_games, agent, learning_type)
 
 
-def run_with_td3(env, n_games, learning_type, heuristic_func, use_model_only, input_dims, action_space, tau, fc_dims,
+def run_with_td3(env, n_games, learning_type, heuristic_func, use_model_only, tau, fc_dims,
                  actor_optimizer_type,
                  critic_optimizer_type, actor_optimizer_args={}, critic_optimizer_args={}, gamma=0.99,
                  max_size=1000000, batch_size=64, policy_update_interval=2, noise_std=0.2,
                  noise_clip=0.5, goal=None, **args):
-    agent = HeuristicWithTD3(heuristic_func, use_model_only, input_dims, action_space, tau, fc_dims,
-                             actor_optimizer_type,
-                             critic_optimizer_type, actor_optimizer_args, critic_optimizer_args, gamma,
-                             max_size, batch_size, policy_update_interval, noise_std,
+    agent = HeuristicWithTD3(heuristic_func, use_model_only, env.observation_space.shape, env.action_space, tau, fc_dims,
+                             actor_optimizer_type, critic_optimizer_type, actor_optimizer_args, critic_optimizer_args,
+                             gamma, max_size, batch_size, policy_update_interval, noise_std,
                              noise_clip, goal, **args)
     return run(env, n_games, agent, learning_type)
 
