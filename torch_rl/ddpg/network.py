@@ -9,6 +9,7 @@ class PolicyNetwork(nn.Module):
     def __init__(self, input_dims, n_actions, network_args, optimizer_type, optimizer_args, init_w=3e-3):
         super(PolicyNetwork, self).__init__()
 
+        self.input_dim_len = len(input_dims)
         self.conv_list = []
         if 'cnn_dims' in network_args:
             cnn_dims = network_args['cnn_dims']
@@ -19,13 +20,15 @@ class PolicyNetwork(nn.Module):
                 stride = cnn_dim[2]
                 self.conv_list.append(nn.Conv2d(in_channel, out_channel, kernel_size, stride=stride))
 
-            total_fc_input_dims = self.calculate_conv_output_dims(input_dims)
-        else:
-            total_fc_input_dims = input_dims[0]
+                self.total_fc_input_dims = self.calculate_conv_output_dims(input_dims)
+            else:
+                self.total_fc_input_dims = 1
+                for dim in input_dims:
+                    self.total_fc_input_dims *= dim
 
         fc_dims = network_args['fc_dims']
         fc1_dims, fc2_dims = get_hidden_layer_sizes(fc_dims)
-        self.fc1 = nn.Linear(total_fc_input_dims, fc1_dims)
+        self.fc1 = nn.Linear(self.total_fc_input_dims, fc1_dims)
         self.fc2 = nn.Linear(fc1_dims, fc2_dims)
         self.fc3 = nn.Linear(fc2_dims, n_actions)
 
@@ -50,8 +53,17 @@ class PolicyNetwork(nn.Module):
                 out = F.relu(conv(out))
             conv3 = out
             state = conv3.view(conv3.size()[0], -1)
+            x = F.relu(self.fc1(state))
+        else:
+            if len(state.shape) == self.input_dim_len:
+                state = state.flatten()
+                x = F.relu(self.fc1(state))
+            else:
+                states = T.empty((state.shape[0], self.input_dim_len))
+                for i, s in enumerate(state):
+                    states[i] = s.flatten()
+                x = F.relu(self.fc1(states))
 
-        x = F.relu(self.fc1(state))
         x = F.relu(self.fc2(x))
         return T.tanh(self.fc3(x))
 
@@ -66,6 +78,7 @@ class ValueNetwork(nn.Module):
     def __init__(self, input_dims, action_dim, network_args, optimizer_type, optimizer_args, init_w=3e-3):
         super(ValueNetwork, self).__init__()
         self.conv_list = []
+        self.input_dim_len = len(input_dims)
         if 'cnn_dims' in network_args:
             cnn_dims = network_args['cnn_dims']
             for i, cnn_dim in enumerate(cnn_dims):
@@ -75,19 +88,17 @@ class ValueNetwork(nn.Module):
                 stride = cnn_dim[2]
                 self.conv_list.append(nn.Conv2d(in_channel, out_channel, kernel_size, stride=stride))
 
-            total_fc_input_dims = self.calculate_conv_output_dims(tuple(np.add(input_dims, action_dim)))
-            self.flatten_input = False
+            self.total_fc_input_dims = self.calculate_conv_output_dims(tuple(np.add(input_dims, action_dim)))
         else:
-            self.flatten_input = len(input_dims) > 1
-            total_fc_input_dims = 1
+            self.total_fc_input_dims = 1
             for dim in input_dims:
-                total_fc_input_dims *= dim
-            total_fc_input_dims += action_dim[0]
+                self.total_fc_input_dims *= dim
+            self.total_fc_input_dims += action_dim[0]
 
         fc_dims = network_args['fc_dims']
         fc1_dims, fc2_dims = get_hidden_layer_sizes(fc_dims)
 
-        self.fc1 = nn.Linear(total_fc_input_dims, fc1_dims)
+        self.fc1 = nn.Linear(self.total_fc_input_dims, fc1_dims)
         self.fc2 = nn.Linear(fc1_dims, fc2_dims)
         self.fc3 = nn.Linear(fc2_dims, 1)
 
@@ -113,9 +124,14 @@ class ValueNetwork(nn.Module):
             conv3 = out
             x = conv3.view(conv3.size()[0], -1)
         else:
-            if self.flatten_input:
+            if len(state.shape) == self.input_dim_len:
                 state = state.flatten()
-            x = T.cat([state, action], 1)
+                x = T.cat([state, action], 1)
+            else:
+                states = T.empty((state.shape[0], self.input_dim_len))
+                for i, s in enumerate(state):
+                    states[i] = s.flatten()
+                x = T.cat([states, action], 1)
 
         x = F.relu(self.fc1(x))
         x = F.relu(self.fc2(x))

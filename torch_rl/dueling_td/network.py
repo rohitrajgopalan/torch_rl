@@ -9,6 +9,7 @@ class DuelingTDNetwork(nn.Module):
     def __init__(self, input_dims, n_actions, network_args, optimizer_type, optimizer_args={}):
         super(DuelingTDNetwork, self).__init__()
 
+        self.input_dim_len = len(input_dims)
         self.conv_list = []
         if 'cnn_dims' in network_args:
             cnn_dims = network_args['cnn_dims']
@@ -19,18 +20,16 @@ class DuelingTDNetwork(nn.Module):
                 stride = cnn_dim[2]
                 self.conv_list.append(nn.Conv2d(in_channel, out_channel, kernel_size, stride=stride))
 
-            total_fc_input_dims = self.calculate_conv_output_dims(input_dims)
-            self.flatten_input = False
+            self.total_fc_input_dims = self.calculate_conv_output_dims(input_dims)
         else:
-            self.flatten_input = len(input_dims) > 1
-            total_fc_input_dims = 1
+            self.total_fc_input_dims = 1
             for dim in input_dims:
-                total_fc_input_dims *= dim
+                self.total_fc_input_dims *= dim
 
         fc_dims = network_args['fc_dims']
         fc1_dims, fc2_dims = get_hidden_layer_sizes(fc_dims)
 
-        self.fc1 = nn.Linear(total_fc_input_dims, fc1_dims)
+        self.fc1 = nn.Linear(self.total_fc_input_dims, fc1_dims)
         self.fc2 = nn.Linear(fc1_dims, fc2_dims)
         self.V = nn.Linear(fc2_dims, 1)
         self.A = nn.Linear(fc2_dims, n_actions)
@@ -47,11 +46,17 @@ class DuelingTDNetwork(nn.Module):
                 out = F.relu(conv(out))
             conv3 = out
             state = conv3.view(conv3.size()[0], -1)
+            flat1 = F.relu(self.fc1(state))
         else:
-            if self.flatten_input:
+            if len(state.shape) == self.input_dim_len:
                 state = state.flatten()
+                flat1 = F.relu(self.fc1(state))
+            else:
+                states = T.empty((state.shape[0], self.input_dim_len))
+                for i, s in enumerate(state):
+                    states[i] = s.flatten()
+                flat1 = F.relu(self.fc1(states))
 
-        flat1 = F.relu(self.fc1(state))
         flat2 = F.relu(self.fc2(flat1))
 
         V = self.V(flat2)

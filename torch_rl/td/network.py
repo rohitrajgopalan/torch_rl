@@ -11,13 +11,13 @@ class FCTDNetwork(nn.Module):
 
         fc1_dims, fc2_dims = get_hidden_layer_sizes(fc_dims)
 
-        self.flatten_input = len(input_dims) > 1
-        total_fc_dims = 1
+        self.input_dim_len = len(input_dims)
+        self.total_fc_dims = 1
         for dim in input_dims:
-            total_fc_dims *= dim
+            self.total_fc_dims *= dim
 
         self.model = nn.Sequential(
-            nn.Linear(total_fc_dims, fc1_dims),
+            nn.Linear(self.total_fc_dims, fc1_dims),
             nn.ReLU(),
             nn.Linear(fc1_dims, fc2_dims),
             nn.ReLU(),
@@ -30,9 +30,14 @@ class FCTDNetwork(nn.Module):
         self.to(self.device)
 
     def forward(self, state):
-        if self.flatten_input:
+        if len(state.shape) == self.input_dim_len:
             state = state.flatten()
-        return self.model(state)
+            return self.model(state)
+        else:
+            states = T.empty((state.shape[0], self.input_dim_len))
+            for i, s in enumerate(state):
+                states[i] = s.flatten()
+            return self.model(states)
 
     def save_model(self, model_file_name):
         T.save(self.state_dict(), model_file_name)
