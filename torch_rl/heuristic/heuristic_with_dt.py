@@ -13,12 +13,16 @@ class HeuristicWithDT(HeuristicWithML):
         self.actions = []
 
     def predict_action(self, observation, train, **args):
+        if type(observation) == np.ndarray and len(observation.shape) > 1:
+            observation = observation.flatten()
         predicted_action = self.model.predict(np.array([observation]))[0]
         if self.is_continuous and not type(predicted_action) == np.ndarray:
             predicted_action = np.array([predicted_action])
         return predicted_action
 
     def store_transition(self, state, action, reward, state_, done):
+        if type(state) == np.ndarray and len(state.shape) > 1:
+            state = state.flatten()
         self.states.append(state)
         self.actions.append(action)
 
