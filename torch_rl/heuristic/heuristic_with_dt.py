@@ -28,3 +28,9 @@ class HeuristicWithDT(HeuristicWithML):
 
     def optimize(self, env, learning_type):
         self.model.fit(np.array(self.states), np.array(self.actions))
+
+    def __str__(self):
+        return 'Heuristic driven DT Agent {0}'.format('only using models' if self.use_model_only else 'alternating '
+                                                                                                      'between '
+                                                                                                      'models and '
+                                                                                                      'heuristic')

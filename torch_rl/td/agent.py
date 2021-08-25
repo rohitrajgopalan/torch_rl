@@ -221,3 +221,8 @@ class TDAgent:
         self.q_eval.save_model('{0}_q_eval'.format(model_name))
         self.q_next.save_model('{0}_q_next'.format(model_name))
         self.policy.save_snapshot(model_name)
+
+    def __str__(self):
+        return '{0}Deep {1} Agent using {2} policy'.format('Double ' if self.is_double else '',
+                                                           self.algorithm_type.name,
+                                                           self.policy_type.name)

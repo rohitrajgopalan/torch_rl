@@ -127,7 +127,7 @@ class HeuristicWithDuelingTD(HeuristicWithML, DuelingTDAgent):
         V_s, A_s = self.q_eval.forward(inputs)
         V_s_, A_s_ = self.q_next.forward(inputs)
         q_values = T.add(V_s,
-                       (A_s - A_s.mean(dim=1, keepdim=True)))
+                         (A_s - A_s.mean(dim=1, keepdim=True)))
         q_next = T.add(V_s_, (A_s_ - A_s_.mean(dim=1, keepdim=True)))
 
         logsumexp = T.logsumexp(q_values, dim=1, keepdim=True)
@@ -137,3 +137,11 @@ class HeuristicWithDuelingTD(HeuristicWithML, DuelingTDAgent):
         data_values = (q_next * one_hot).sum(dim=1, keepdim=True)
 
         return (logsumexp - data_values).mean()
+
+    def __str__(self):
+        return 'Heuristic driven {0}Dueling Deep {1} Agent using {2} policy {3}'.format(
+            'Double ' if self.is_double else '',
+            self.algorithm_type.name,
+            self.policy_type.name,
+            'only using models' if self.use_model_only else 'alternating between models and heuristic '
+            )

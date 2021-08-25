@@ -247,3 +247,6 @@ class Agent:
         if ddpg_target_critic_model is not None:
             self.target_critic1.load_model(ddpg_target_critic_model)
             self.target_critic2.load_model(ddpg_target_critic_model)
+
+    def __str__(self):
+        return "TD3 Agent"

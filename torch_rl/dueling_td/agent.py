@@ -11,7 +11,8 @@ from ..action_blocker.action_blocker import ActionBlocker
 class DuelingTDAgent:
     def __init__(self, algorithm_type, is_double, gamma, action_space, input_dims,
                  mem_size, batch_size, network_args, optimizer_type, policy_type, policy_args={},
-                 replace=1000, optimizer_args={}, enable_action_blocking=False, min_penalty=0, goal=None, assign_priority=False):
+                 replace=1000, optimizer_args={}, enable_action_blocking=False, min_penalty=0, goal=None,
+                 assign_priority=False):
         self.algorithm_type = algorithm_type
         self.is_double = is_double
         self.gamma = gamma
@@ -28,13 +29,17 @@ class DuelingTDAgent:
         if self.goal is not None:
             if not type(self.goal) == np.ndarray:
                 self.goal = np.array([self.goal]).astype(np.float32)
-            self.q_eval = DuelingTDNetwork(tuple(np.add(self.input_dims, self.goal.shape)), self.n_actions, network_args, optimizer_type,
+            self.q_eval = DuelingTDNetwork(tuple(np.add(self.input_dims, self.goal.shape)), self.n_actions,
+                                           network_args, optimizer_type,
                                            optimizer_args)
-            self.q_next = DuelingTDNetwork(tuple(np.add(self.input_dims, self.goal.shape)), self.n_actions, network_args, optimizer_type,
+            self.q_next = DuelingTDNetwork(tuple(np.add(self.input_dims, self.goal.shape)), self.n_actions,
+                                           network_args, optimizer_type,
                                            optimizer_args)
         else:
-            self.q_eval = DuelingTDNetwork(self.input_dims, self.n_actions, network_args, optimizer_type, optimizer_args)
-            self.q_next = DuelingTDNetwork(self.input_dims, self.n_actions, network_args, optimizer_type, optimizer_args)
+            self.q_eval = DuelingTDNetwork(self.input_dims, self.n_actions, network_args, optimizer_type,
+                                           optimizer_args)
+            self.q_next = DuelingTDNetwork(self.input_dims, self.n_actions, network_args, optimizer_type,
+                                           optimizer_args)
 
         if assign_priority:
             self.memory = PriorityReplayBuffer(mem_size, input_dims, goal=self.goal)
@@ -147,7 +152,7 @@ class DuelingTDAgent:
             else:
                 next_q_value = Q_[action]
 
-        return reward + (self.gamma * next_q_value * (1-done)) - Q[action]
+        return reward + (self.gamma * next_q_value * (1 - done)) - Q[action]
 
     def replace_target_network(self):
         if self.learn_step_counter % self.replace_target_cnt == 0:
@@ -235,3 +240,8 @@ class DuelingTDAgent:
         self.q_eval.save_model('{0}_q_eval'.format(model_name))
         self.q_next.save_model('{0}_q_next'.format(model_name))
         self.policy.save_snapshot(model_name)
+
+    def __str__(self):
+        return '{0}Dueling Deep {1} Agent using {2} policy'.format('Double ' if self.is_double else '',
+                                                                   self.algorithm_type.name,
+                                                                   self.policy_type.name)

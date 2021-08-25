@@ -70,5 +70,11 @@ class HeuristicWithDDPG(HeuristicWithML, Agent):
 
     def store_transition(self, state, action, reward, state_, done):
         Agent.store_transition(self, state, action, reward, state_, done)
+
+    def __str__(self):
+        return 'Heuristic driven DDPG Agent {0}'.format('only using models' if self.use_model_only else 'alternating '
+                                                                                                        'between '
+                                                                                                        'models and '
+                                                                                                        'heuristic')
     
     

@@ -14,9 +14,11 @@ class HeuristicWithTD(HeuristicWithML, TDAgent):
                  mem_size, batch_size, network_args, optimizer_type, policy_type, policy_args={},
                  replace=1000, optimizer_args={}, goal=None, enable_action_blocking=False,
                  min_penalty=0, add_conservative_loss=False, alpha=0.001, **args):
-        HeuristicWithML.__init__(self, heuristic_func, use_model_only, action_space, enable_action_blocking, min_penalty,
+        HeuristicWithML.__init__(self, heuristic_func, use_model_only, action_space, enable_action_blocking,
+                                 min_penalty,
                                  **args)
-        TDAgent.__init__(self, algorithm_type, is_double, gamma, action_space, input_dims, mem_size, batch_size, network_args,
+        TDAgent.__init__(self, algorithm_type, is_double, gamma, action_space, input_dims, mem_size, batch_size,
+                         network_args,
                          optimizer_type, policy_type, policy_args, replace, optimizer_args, enable_action_blocking,
                          min_penalty, goal, False)
         self.add_conservative_loss = add_conservative_loss
@@ -33,7 +35,8 @@ class HeuristicWithTD(HeuristicWithML, TDAgent):
             else:
                 end = i * self.batch_size
 
-            state, action, reward, new_state, done, goals = self.memory.sample_buffer(randomized=False, start=start, end=end)
+            state, action, reward, new_state, done, goals = self.memory.sample_buffer(randomized=False, start=start,
+                                                                                      end=end)
 
             states = T.tensor(state)
             rewards = T.tensor(reward)
@@ -127,3 +130,11 @@ class HeuristicWithTD(HeuristicWithML, TDAgent):
         data_values = (self.q_next.forward(inputs) * one_hot).sum(dim=1, keepdim=True)
 
         return (logsumexp - data_values).mean()
+
+    def __str__(self):
+        return 'Heuristic driven {0}Deep {1} Agent using {2} policy {3}'.format(
+            'Double ' if self.is_double else '',
+            self.algorithm_type.name,
+            self.policy_type.name,
+            'only using models' if self.use_model_only else 'alternating between models and heuristic '
+        )

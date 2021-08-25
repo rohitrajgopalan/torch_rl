@@ -190,3 +190,6 @@ class Agent:
             self.target_actor.load_model(td3_target_actor_model)
         if td3_target_critic_model is not None:
             self.target_critic.load_model(td3_target_critic_model)
+
+    def __str__(self):
+        return "DDPG Agent"
