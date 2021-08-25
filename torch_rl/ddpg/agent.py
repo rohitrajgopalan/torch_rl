@@ -10,7 +10,7 @@ from torch_rl.replay.priority_replay import PriorityReplayBuffer
 class Agent:
     def __init__(self, input_dims, action_space, tau, network_args, actor_optimizer_type, critic_optimizer_type,
                  actor_optimizer_args={}, critic_optimizer_args={}, gamma=0.99,
-                 max_size=1000000, batch_size=64, goal=None, assign_priority=False):
+                 max_size=1000000, batch_size=64, goal=None, assign_priority=False, model_name=None):
         self.gamma = gamma
         self.tau = tau
         self.batch_size = batch_size
@@ -61,6 +61,9 @@ class Agent:
 
         self.action_space = action_space
 
+        if model_name is not None:
+            self.load_model(model_name)
+
     def update_network_parameters(self, soft_tau=None):
         if soft_tau is None:
             soft_tau = self.tau
@@ -93,7 +96,8 @@ class Agent:
     def get_critic_value(self, observation, action, use_target=False):
         state = T.tensor([observation], dtype=T.float).to(self.target_actor.device if use_target else self.actor.device)
         if self.goal is not None:
-            goal = T.tensor([self.goal], dtype=T.float).to(self.target_actor.device if use_target else self.actor.device)
+            goal = T.tensor([self.goal], dtype=T.float).to(
+                self.target_actor.device if use_target else self.actor.device)
             inputs = T.cat([state, goal], dim=1)
         else:
             inputs = state
@@ -114,7 +118,7 @@ class Agent:
         next_critic_value = self.get_critic_value(state_, target_action, True)
         old_critic_value = self.get_critic_value(state, action, False)
 
-        return reward + (self.gamma * next_critic_value * (1-done)) - old_critic_value
+        return reward + (self.gamma * next_critic_value * (1 - done)) - old_critic_value
 
     def sample_memory(self):
         state, action, reward, state_, done, goals = self.memory.sample_buffer(self.batch_size)

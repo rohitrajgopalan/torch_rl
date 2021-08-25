@@ -13,14 +13,14 @@ class HeuristicWithTD(HeuristicWithML, TDAgent):
     def __init__(self, heuristic_func, use_model_only, algorithm_type, is_double, gamma, action_space, input_dims,
                  mem_size, batch_size, network_args, optimizer_type, policy_type, policy_args={},
                  replace=1000, optimizer_args={}, goal=None, enable_action_blocking=False,
-                 min_penalty=0, add_conservative_loss=False, alpha=0.001, **args):
+                 min_penalty=0, add_conservative_loss=False, alpha=0.001, model_name=None, **args):
         HeuristicWithML.__init__(self, heuristic_func, use_model_only, action_space, enable_action_blocking,
                                  min_penalty,
                                  **args)
         TDAgent.__init__(self, algorithm_type, is_double, gamma, action_space, input_dims, mem_size, batch_size,
                          network_args,
                          optimizer_type, policy_type, policy_args, replace, optimizer_args, enable_action_blocking,
-                         min_penalty, goal, False)
+                         min_penalty, goal, False, model_name)
         self.add_conservative_loss = add_conservative_loss
         self.alpha = alpha
 

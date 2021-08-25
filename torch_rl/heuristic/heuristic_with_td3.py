@@ -13,12 +13,12 @@ class HeuristicWithTD3(HeuristicWithML, Agent):
                  actor_optimizer_type,
                  critic_optimizer_type, actor_optimizer_args={}, critic_optimizer_args={}, gamma=0.99,
                  max_size=1000000, batch_size=64, policy_update_interval=2, noise_std=0.2,
-                 noise_clip=0.5, goal=None, **args):
+                 noise_clip=0.5, goal=None, model_name=None, **args):
         HeuristicWithML.__init__(self, heuristic_func, use_model_only, action_space, False, 0, **args)
         Agent.__init__(input_dims, action_space, tau, network_args, actor_optimizer_type, critic_optimizer_type,
                        actor_optimizer_args, critic_optimizer_args, gamma,
                        max_size, batch_size, policy_update_interval, noise_std,
-                       noise_clip, goal, False)
+                       noise_clip, goal, False, model_name)
 
     def optimize(self, env, learning_type):
         num_updates = int(math.ceil(self.memory.mem_cntr / self.batch_size))

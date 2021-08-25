@@ -12,7 +12,7 @@ class Agent:
     def __init__(self, input_dims, action_space, tau, network_args, actor_optimizer_type, critic_optimizer_type,
                  actor_optimizer_args={}, critic_optimizer_args={}, gamma=0.99,
                  max_size=1000000, batch_size=64, policy_update_interval=2, noise_std=0.2,
-                 noise_clip=0.5, goal=None, assign_priority=False):
+                 noise_clip=0.5, goal=None, assign_priority=False, model_name=None):
         self.gamma = gamma
         self.tau = tau
         self.batch_size = batch_size
@@ -78,6 +78,9 @@ class Agent:
         self.value2_loss_history = []
         self.learn_step_cntr = 0
         self.action_space = action_space
+
+        if model_name is not None:
+            self.load_model(model_name)
 
     def update_network_parameters(self, soft_tau=None):
         if soft_tau is None:

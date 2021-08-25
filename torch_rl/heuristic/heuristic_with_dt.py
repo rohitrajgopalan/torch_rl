@@ -3,12 +3,17 @@ from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 
 from .heuristic_with_ml import HeuristicWithML
 
+import joblib
+
 
 class HeuristicWithDT(HeuristicWithML):
     def __init__(self, heuristic_func, use_model_only, action_space, enable_action_blocking=False,
-                 min_penalty=0, **args):
+                 min_penalty=0, model_name=None, **args):
         super().__init__(heuristic_func, use_model_only, action_space, enable_action_blocking, min_penalty, **args)
-        self.model = DecisionTreeRegressor() if self.is_continuous else DecisionTreeClassifier()
+        if model_name is None:
+            self.model = DecisionTreeRegressor() if self.is_continuous else DecisionTreeClassifier()
+        else:
+            self.load_model(model_name)
         self.states = []
         self.actions = []
 
@@ -34,3 +39,9 @@ class HeuristicWithDT(HeuristicWithML):
                                                                                                       'between '
                                                                                                       'models and '
                                                                                                       'heuristic')
+
+    def load_model(self, model_name):
+        self.model = joblib.load('{0}.pkl'.format(model_name))
+
+    def save_model(self, model_name):
+        joblib.dump(self.model, '{0}.pkl'.format(model_name))

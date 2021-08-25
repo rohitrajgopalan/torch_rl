@@ -12,7 +12,7 @@ class TDAgent:
     def __init__(self, algorithm_type, is_double, gamma, action_space, input_dims,
                  mem_size, batch_size, network_args, optimizer_type, policy_type, policy_args={},
                  replace=1000, optimizer_args={}, enable_action_blocking=False,
-                 min_penalty=0, goal=None, assign_priority=False):
+                 min_penalty=0, goal=None, assign_priority=False, model_name=None):
         self.algorithm_type = algorithm_type
         self.is_double = is_double
         self.gamma = gamma
@@ -48,6 +48,9 @@ class TDAgent:
         if self.enable_action_blocking:
             self.action_blocker = ActionBlocker(action_space, min_penalty)
         self.initial_action_blocked = False
+
+        if model_name is not None:
+            self.load_model(model_name)
 
     def choose_action(self, env, observation, train=True):
         original_action = self.choose_policy_action(observation, train)
