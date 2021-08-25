@@ -5,13 +5,13 @@ from torch_rl.utils.utils import have_we_ran_out_of_time
 from .agent import TDAgent
 
 
-def run(env, n_games, algorithm_type, is_double, gamma, mem_size, batch_size, fc_dims,
+def run(env, n_games, algorithm_type, is_double, gamma, mem_size, batch_size, network_args,
         optimizer_type, policy_type, policy_args={},
         replace=1000, optimizer_args={}, enable_action_blocking=False,
         min_penalty=0, goal=None, assign_priority=False):
     input_dims = env.observation_space.shape if type(env.observation_space) == Box else (1,)
     agent = TDAgent(algorithm_type, is_double, gamma, env.action_space, input_dims,
-                    mem_size, batch_size, fc_dims, optimizer_type, policy_type, policy_args,
+                    mem_size, batch_size, network_args, optimizer_type, policy_type, policy_args,
                     replace, optimizer_args, enable_action_blocking, min_penalty, goal, assign_priority)
 
     if type(n_games) == int:

@@ -8,7 +8,7 @@ from torch_rl.replay.priority_replay import PriorityReplayBuffer
 
 
 class Agent:
-    def __init__(self, input_dims, action_space, tau, fc_dims, actor_optimizer_type, critic_optimizer_type,
+    def __init__(self, input_dims, action_space, tau, network_args, actor_optimizer_type, critic_optimizer_type,
                  actor_optimizer_args={}, critic_optimizer_args={}, gamma=0.99,
                  max_size=1000000, batch_size=64, goal=None, assign_priority=False):
         self.gamma = gamma
@@ -21,32 +21,32 @@ class Agent:
         if self.goal is not None:
             if not type(self.goal) == np.ndarray:
                 self.goal = np.array([self.goal]).astype(np.float32)
-            self.actor = PolicyNetwork(input_dims[0] + self.goal.shape[0],
-                                       action_space.shape[0], fc_dims, actor_optimizer_type,
+            self.actor = PolicyNetwork(tuple(np.add(input_dims, self.goal.shape)),
+                                       action_space.shape[0], network_args, actor_optimizer_type,
                                        actor_optimizer_args)
 
-            self.critic = ValueNetwork(input_dims[0] + self.goal.shape[0],
-                                       action_space.shape, fc_dims, critic_optimizer_type,
+            self.critic = ValueNetwork(tuple(np.add(input_dims, self.goal.shape)),
+                                       action_space.shape, network_args, critic_optimizer_type,
                                        critic_optimizer_args)
 
-            self.target_actor = PolicyNetwork(input_dims[0] + self.goal.shape[0],
-                                              action_space.shape[0], fc_dims, actor_optimizer_type,
+            self.target_actor = PolicyNetwork(tuple(np.add(input_dims, self.goal.shape)),
+                                              action_space.shape[0], network_args, actor_optimizer_type,
                                               actor_optimizer_args)
 
-            self.target_critic = ValueNetwork(input_dims[0] + self.goal.shape[0],
-                                              action_space.shape, fc_dims, critic_optimizer_type,
+            self.target_critic = ValueNetwork(tuple(np.add(input_dims, self.goal.shape)),
+                                              action_space.shape, network_args, critic_optimizer_type,
                                               critic_optimizer_args)
         else:
-            self.actor = PolicyNetwork(input_dims[0], action_space.shape[0], fc_dims, actor_optimizer_type,
+            self.actor = PolicyNetwork(input_dims, action_space.shape[0], network_args, actor_optimizer_type,
                                        actor_optimizer_args)
 
-            self.critic = ValueNetwork(input_dims[0], action_space.shape, fc_dims, critic_optimizer_type,
+            self.critic = ValueNetwork(input_dims, action_space.shape, network_args, critic_optimizer_type,
                                        critic_optimizer_args)
 
-            self.target_actor = PolicyNetwork(input_dims[0], action_space.shape[0], fc_dims, actor_optimizer_type,
+            self.target_actor = PolicyNetwork(input_dims, action_space.shape[0], network_args, actor_optimizer_type,
                                               actor_optimizer_args)
 
-            self.target_critic = ValueNetwork(input_dims[0], action_space.shape, fc_dims, critic_optimizer_type,
+            self.target_critic = ValueNetwork(input_dims, action_space.shape, network_args, critic_optimizer_type,
                                               critic_optimizer_args)
 
         self.update_network_parameters(soft_tau=1)

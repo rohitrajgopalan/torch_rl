@@ -9,12 +9,12 @@ from .heuristic_with_ml import HeuristicWithML
 
 
 class HeuristicWithTD3(HeuristicWithML, Agent):
-    def __init__(self, heuristic_func, use_model_only, input_dims, action_space, tau, fc_dims, actor_optimizer_type,
+    def __init__(self, heuristic_func, use_model_only, input_dims, action_space, tau, network_args, actor_optimizer_type,
                  critic_optimizer_type, actor_optimizer_args={}, critic_optimizer_args={}, gamma=0.99,
                  max_size=1000000, batch_size=64, policy_update_interval=2, noise_std=0.2,
                  noise_clip=0.5, goal=None, **args):
         HeuristicWithML.__init__(self, heuristic_func, use_model_only, action_space, False, 0, **args)
-        Agent.__init__(input_dims, action_space, tau, fc_dims, actor_optimizer_type, critic_optimizer_type,
+        Agent.__init__(input_dims, action_space, tau, network_args, actor_optimizer_type, critic_optimizer_type,
                        actor_optimizer_args, critic_optimizer_args, gamma,
                        max_size, batch_size, policy_update_interval, noise_std,
                        noise_clip, goal, False)

@@ -10,7 +10,7 @@ from ..action_blocker.action_blocker import ActionBlocker
 
 class DuelingTDAgent:
     def __init__(self, algorithm_type, is_double, gamma, action_space, input_dims,
-                 mem_size, batch_size, fc_dims, optimizer_type, policy_type, policy_args={},
+                 mem_size, batch_size, network_args, optimizer_type, policy_type, policy_args={},
                  replace=1000, optimizer_args={}, enable_action_blocking=False, min_penalty=0, goal=None, assign_priority=False):
         self.algorithm_type = algorithm_type
         self.is_double = is_double
@@ -28,13 +28,13 @@ class DuelingTDAgent:
         if self.goal is not None:
             if not type(self.goal) == np.ndarray:
                 self.goal = np.array([self.goal]).astype(np.float32)
-            self.q_eval = DuelingTDNetwork(self.input_dims[0] + self.goal.shape[0], self.n_actions, fc_dims, optimizer_type,
+            self.q_eval = DuelingTDNetwork(tuple(np.add(self.input_dims, self.goal.shape)), self.n_actions, network_args, optimizer_type,
                                            optimizer_args)
-            self.q_next = DuelingTDNetwork(self.input_dims[0] + self.goal.shape[0], self.n_actions, fc_dims, optimizer_type,
+            self.q_next = DuelingTDNetwork(tuple(np.add(self.input_dims, self.goal.shape)), self.n_actions, network_args, optimizer_type,
                                            optimizer_args)
         else:
-            self.q_eval = DuelingTDNetwork(self.input_dims[0], self.n_actions, fc_dims, optimizer_type, optimizer_args)
-            self.q_next = DuelingTDNetwork(self.input_dims[0], self.n_actions, fc_dims, optimizer_type, optimizer_args)
+            self.q_eval = DuelingTDNetwork(self.input_dims, self.n_actions, network_args, optimizer_type, optimizer_args)
+            self.q_next = DuelingTDNetwork(self.input_dims, self.n_actions, network_args, optimizer_type, optimizer_args)
 
         if assign_priority:
             self.memory = PriorityReplayBuffer(mem_size, input_dims, goal=self.goal)
