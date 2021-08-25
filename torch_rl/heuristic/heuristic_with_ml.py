@@ -24,8 +24,8 @@ class HeuristicWithML:
         for arg in args:
             setattr(self, arg, args[arg])
 
-    def get_action(self, env, learning_type, observation, train=True):
-        original_action = self.get_original_action(env, learning_type, observation, train)
+    def get_action(self, env, learning_type, observation, train=True, **args):
+        original_action = self.get_original_action(env, learning_type, observation, train, **args)
         if self.enable_action_blocking:
             actual_action = self.action_blocker.find_safe_action(env, original_action)
             self.initial_action_blocked = (actual_action is None or actual_action != original_action)
@@ -35,9 +35,9 @@ class HeuristicWithML:
         else:
             return original_action
 
-    def get_original_action(self, env, learning_type, observation, train=True):
+    def get_original_action(self, env, learning_type, observation, train=True, **args):
         heuristic_action = self.heuristic_func(self, observation)
-        predicted_action = self.predict_action(observation, train)
+        predicted_action = self.predict_action(observation, train, **args)
         if learning_type == LearningType.OFFLINE and train:
             self.num_heuristic_actions_chosen += 1
             return heuristic_action

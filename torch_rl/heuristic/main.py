@@ -84,7 +84,7 @@ def run(env, n_games, agent, learning_type):
 
             t = 0
             while not done and not have_we_ran_out_of_time(env, t):
-                action = agent.get_action(env, learning_type, observation, True)
+                action = agent.get_action(env, learning_type, observation, True, t)
 
                 observation_, reward, done, _ = env.step(action)
 
@@ -93,7 +93,7 @@ def run(env, n_games, agent, learning_type):
                 score += reward
 
                 agent.store_transition(observation, agent.get_original_action(env, learning_type,
-                                                                              observation, True),
+                                                                              observation, True, t),
                                        reward, observation_, done)
 
                 observation = observation_
