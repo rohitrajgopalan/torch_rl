@@ -20,8 +20,12 @@ class DuelingTDNetwork(nn.Module):
                 self.conv_list.append(nn.Conv2d(in_channel, out_channel, kernel_size, stride=stride))
 
             total_fc_input_dims = self.calculate_conv_output_dims(input_dims)
+            self.flatten_input = False
         else:
-            total_fc_input_dims = input_dims[0]
+            self.flatten_input = len(input_dims) > 1
+            total_fc_input_dims = 1
+            for dim in input_dims:
+                total_fc_input_dims *= dim
 
         fc_dims = network_args['fc_dims']
         fc1_dims, fc2_dims = get_hidden_layer_sizes(fc_dims)
@@ -43,6 +47,9 @@ class DuelingTDNetwork(nn.Module):
                 out = F.relu(conv(out))
             conv3 = out
             state = conv3.view(conv3.size()[0], -1)
+        else:
+            if self.flatten_input:
+                state = state.flatten()
 
         flat1 = F.relu(self.fc1(state))
         flat2 = F.relu(self.fc2(flat1))

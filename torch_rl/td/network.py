@@ -6,13 +6,18 @@ from torch_rl.utils.utils import get_torch_optimizer, get_hidden_layer_sizes
 
 
 class FCTDNetwork(nn.Module):
-    def __init__(self, num_inputs, n_actions, fc_dims, optimizer_type, optimizer_args={}):
+    def __init__(self, input_dims, n_actions, fc_dims, optimizer_type, optimizer_args={}):
         super(FCTDNetwork, self).__init__()
 
         fc1_dims, fc2_dims = get_hidden_layer_sizes(fc_dims)
 
+        self.flatten_input = len(input_dims) > 1
+        total_fc_dims = 1
+        for dim in input_dims:
+            total_fc_dims *= dim
+
         self.model = nn.Sequential(
-            nn.Linear(num_inputs, fc1_dims),
+            nn.Linear(total_fc_dims, fc1_dims),
             nn.ReLU(),
             nn.Linear(fc1_dims, fc2_dims),
             nn.ReLU(),
@@ -25,6 +30,8 @@ class FCTDNetwork(nn.Module):
         self.to(self.device)
 
     def forward(self, state):
+        if self.flatten_input:
+            state = state.flatten()
         return self.model(state)
 
     def save_model(self, model_file_name):
@@ -85,6 +92,6 @@ def choose_network(input_dims, n_actions, network_args, optimizer_type, optimize
         return CNNTDNetwork(input_dims, n_actions, network_args['cnn_dims'], network_args['fc_dim'],
                             optimizer_type, optimizer_args)
     elif 'fc_dims' in network_args:
-        return FCTDNetwork(input_dims[0], n_actions, network_args['fc_dims'], optimizer_type, optimizer_args)
+        return FCTDNetwork(input_dims, n_actions, network_args['fc_dims'], optimizer_type, optimizer_args)
     else:
         return TypeError('Invalid arguments to choose Network type')

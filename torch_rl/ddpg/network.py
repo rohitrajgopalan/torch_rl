@@ -76,8 +76,13 @@ class ValueNetwork(nn.Module):
                 self.conv_list.append(nn.Conv2d(in_channel, out_channel, kernel_size, stride=stride))
 
             total_fc_input_dims = self.calculate_conv_output_dims(tuple(np.add(input_dims, action_dim)))
+            self.flatten_input = False
         else:
-            total_fc_input_dims = input_dims[0] + action_dim[0]
+            self.flatten_input = len(input_dims) > 1
+            total_fc_input_dims = 1
+            for dim in input_dims:
+                total_fc_input_dims *= dim
+            total_fc_input_dims += action_dim[0]
 
         fc_dims = network_args['fc_dims']
         fc1_dims, fc2_dims = get_hidden_layer_sizes(fc_dims)
@@ -101,14 +106,17 @@ class ValueNetwork(nn.Module):
         return int(np.prod(out.size()))
 
     def forward(self, state, action):
-        x = T.cat([state, action], 1)
         if len(self.conv_list) > 0:
-            out = state
+            out = T.cat([state, action], 1)
             for conv in self.conv_list:
                 out = F.relu(conv(out))
             conv3 = out
             x = conv3.view(conv3.size()[0], -1)
-        
+        else:
+            if self.flatten_input:
+                state = state.flatten()
+            x = T.cat([state, action], 1)
+
         x = F.relu(self.fc1(x))
         x = F.relu(self.fc2(x))
         return self.fc3(x)
