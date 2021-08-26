@@ -7,7 +7,7 @@ from torch_rl.replay.replay import ReplayBuffer
 from torch_rl.replay.priority_replay import PriorityReplayBuffer
 
 
-class Agent:
+class DDPGAgent:
     def __init__(self, input_dims, action_space, tau, network_args, actor_optimizer_type, critic_optimizer_type,
                  actor_optimizer_args={}, critic_optimizer_args={}, gamma=0.99,
                  max_size=1000000, batch_size=64, goal=None, assign_priority=False, model_name=None):

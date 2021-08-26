@@ -3,18 +3,18 @@ import math
 import torch as T
 import torch.nn.functional as F
 
-from torch_rl.ddpg.agent import Agent
+from torch_rl.ddpg.agent import DDPGAgent
 from .heuristic_with_ml import HeuristicWithML
 
 
-class HeuristicWithDDPG(HeuristicWithML, Agent):
+class HeuristicWithDDPG(HeuristicWithML, DDPGAgent):
     def __init__(self, heuristic_func, use_model_only, input_dims, action_space, tau, network_args, actor_optimizer_type,
                  critic_optimizer_type, actor_optimizer_args={}, critic_optimizer_args={}, gamma=0.99,
                  max_size=1000000, batch_size=64, goal=None, model_name=None, **args):
         HeuristicWithML.__init__(self, heuristic_func, use_model_only, action_space, False, 0, **args)
-        Agent.__init__(input_dims, action_space, tau, network_args, actor_optimizer_type, critic_optimizer_type,
-                       actor_optimizer_args, critic_optimizer_args, gamma,
-                       max_size, batch_size, goal, False, model_name)
+        DDPGAgent.__init__(input_dims, action_space, tau, network_args, actor_optimizer_type, critic_optimizer_type,
+                           actor_optimizer_args, critic_optimizer_args, gamma,
+                           max_size, batch_size, goal, False, model_name)
 
     def optimize(self, env, learning_type):
         num_updates = int(math.ceil(self.memory.mem_cntr / self.batch_size))
@@ -66,10 +66,10 @@ class HeuristicWithDDPG(HeuristicWithML, Agent):
             self.update_network_parameters()
 
     def predict_action(self, observation, train, **args):
-        return Agent.choose_action(observation, args['t'], train)
+        return DDPGAgent.choose_action(observation, args['t'], train)
 
     def store_transition(self, state, action, reward, state_, done):
-        Agent.store_transition(self, state, action, reward, state_, done)
+        DDPGAgent.store_transition(self, state, action, reward, state_, done)
 
     def __str__(self):
         return 'Heuristic driven DDPG Agent {0}'.format('only using models' if self.use_model_only else 'alternating '

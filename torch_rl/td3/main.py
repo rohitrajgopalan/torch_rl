@@ -1,6 +1,6 @@
 import numpy as np
 
-from .agent import Agent
+from .agent import TD3Agent
 from torch_rl.utils.utils import have_we_ran_out_of_time
 
 
@@ -8,9 +8,9 @@ def run(env, n_games, tau, network_args, actor_optimizer_type, critic_optimizer_
         actor_optimizer_args={}, critic_optimizer_args={}, gamma=0.99,
         max_size=1000000, batch_size=64, policy_update_interval=2, noise_std=0.2,
         noise_clip=0.5, goal=None, assign_priority=False):
-    agent = Agent(env.observation_space.shape, env.action_space, tau, network_args, actor_optimizer_type,
-                  critic_optimizer_type, actor_optimizer_args, critic_optimizer_args, gamma, max_size, batch_size,
-                  policy_update_interval, noise_std, noise_clip, goal, assign_priority)
+    agent = TD3Agent(env.observation_space.shape, env.action_space, tau, network_args, actor_optimizer_type,
+                     critic_optimizer_type, actor_optimizer_args, critic_optimizer_args, gamma, max_size, batch_size,
+                     policy_update_interval, noise_std, noise_clip, goal, assign_priority)
 
     if type(n_games) == int:
         n_games_train = n_games

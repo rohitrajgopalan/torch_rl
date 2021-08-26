@@ -4,21 +4,21 @@ import numpy as np
 import torch as T
 import torch.nn.functional as F
 
-from torch_rl.td3.agent import Agent
+from torch_rl.td3.agent import TD3Agent
 from .heuristic_with_ml import HeuristicWithML
 
 
-class HeuristicWithTD3(HeuristicWithML, Agent):
+class HeuristicWithTD3(HeuristicWithML, TD3Agent):
     def __init__(self, heuristic_func, use_model_only, input_dims, action_space, tau, network_args,
                  actor_optimizer_type,
                  critic_optimizer_type, actor_optimizer_args={}, critic_optimizer_args={}, gamma=0.99,
                  max_size=1000000, batch_size=64, policy_update_interval=2, noise_std=0.2,
                  noise_clip=0.5, goal=None, model_name=None, **args):
         HeuristicWithML.__init__(self, heuristic_func, use_model_only, action_space, False, 0, **args)
-        Agent.__init__(input_dims, action_space, tau, network_args, actor_optimizer_type, critic_optimizer_type,
-                       actor_optimizer_args, critic_optimizer_args, gamma,
-                       max_size, batch_size, policy_update_interval, noise_std,
-                       noise_clip, goal, False, model_name)
+        TD3Agent.__init__(input_dims, action_space, tau, network_args, actor_optimizer_type, critic_optimizer_type,
+                          actor_optimizer_args, critic_optimizer_args, gamma,
+                          max_size, batch_size, policy_update_interval, noise_std,
+                          noise_clip, goal, False, model_name)
 
     def optimize(self, env, learning_type):
         num_updates = int(math.ceil(self.memory.mem_cntr / self.batch_size))
@@ -92,10 +92,10 @@ class HeuristicWithTD3(HeuristicWithML, Agent):
             self.update_network_parameters()
 
     def predict_action(self, observation, train, **args):
-        return Agent.choose_action(observation, args['t'], train)
+        return TD3Agent.choose_action(observation, args['t'], train)
 
     def store_transition(self, state, action, reward, state_, done):
-        Agent.store_transition(self, state, action, reward, state_, done)
+        TD3Agent.store_transition(self, state, action, reward, state_, done)
 
     def __str__(self):
         return 'Heuristic driven TD3 Agent {0}'.format('only using models' if self.use_model_only else 'alternating '

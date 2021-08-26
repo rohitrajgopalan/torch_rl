@@ -1,15 +1,15 @@
 import numpy as np
 
-from .agent import Agent
+from .agent import DDPGAgent
 from torch_rl.utils.utils import have_we_ran_out_of_time
 
 
 def run(env, n_games, tau, network_args, actor_optimizer_type, critic_optimizer_type,
         actor_optimizer_args={}, critic_optimizer_args={}, gamma=0.99,
         max_size=1000000, batch_size=64, goal=None, assign_priority=False):
-    agent = Agent(env.observation_space.shape, env.action_space, tau, network_args, actor_optimizer_type,
-                  critic_optimizer_type, actor_optimizer_args, critic_optimizer_args, gamma, max_size,
-                  batch_size, goal, assign_priority)
+    agent = DDPGAgent(env.observation_space.shape, env.action_space, tau, network_args, actor_optimizer_type,
+                      critic_optimizer_type, actor_optimizer_args, critic_optimizer_args, gamma, max_size,
+                      batch_size, goal, assign_priority)
 
     if type(n_games) == int:
         n_games_train = n_games
