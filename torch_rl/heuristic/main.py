@@ -130,7 +130,7 @@ def run(env, n_games, agent, learning_type):
                     reward *= -1
                 score += reward
 
-                agent.store_transition(observation, agent.get_original_action(env, learning_type,
+                agent.store_transition(observation, agent.get_original_action(learning_type,
                                                                               observation, True, t),
                                        reward, observation_, done)
 
