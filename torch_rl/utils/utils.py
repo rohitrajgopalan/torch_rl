@@ -6,6 +6,7 @@ from torch_rl.policy.softmax import SoftmaxPolicy
 from torch_rl.policy.thompson_sampling import ThompsonSamplingPolicy
 from torch_rl.policy.upper_confidence_bound import UpperConfidenceBoundPolicy
 from ..policy.policy import Policy
+from torch_rl.replay.replay import ReplayBuffer
 
 
 def get_torch_optimizer(params, optimizer_type, optimizer_args):
@@ -95,3 +96,21 @@ def get_hidden_layer_sizes(fc_dims):
         return fc_dims[0], fc_dims[1]
     else:
         raise TypeError('fc_dims should be integer, list or tuple')
+
+
+def develop_memory_for_dt_action_blocker(env, max_time_steps=1000000):
+    memory = ReplayBuffer(max_time_steps, env.observation_space.shape)
+
+    obs = env.reset()
+    for _ in range(max_time_steps):
+        action = env.action_space.sample()
+        obs_, reward, done, _ = env.step(action)
+
+        memory.store_transition(obs, action, reward, obs_, done)
+
+        if done:
+            env.reset()
+
+    return memory
+
+

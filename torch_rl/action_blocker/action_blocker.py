@@ -11,16 +11,16 @@ class ActionBlocker:
         self.num_actions_blocked = 0
         self.action_space = action_space
 
-    def block_action(self, env, action):
+    def block_action(self, env, state, action):
         local_env = copy.deepcopy(env)
         _, reward, _, _ = local_env.step(action)
         return reward <= -self.min_penalty
 
-    def find_safe_action(self, env, initial_action):
-        if self.block_action(env, initial_action):
+    def find_safe_action(self, env, state, initial_action):
+        if self.block_action(env, state, initial_action):
             remaining_actions = [a for a in range(self.action_space.n) if a != initial_action]
             for a in remaining_actions:
-                if not self.block_action(env, a):
+                if not self.block_action(env, state, a):
                     return a
                 self.num_actions_blocked += 1
             return None

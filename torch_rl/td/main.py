@@ -1,18 +1,30 @@
 import numpy as np
 from gym.spaces import Box
 
-from torch_rl.utils.utils import have_we_ran_out_of_time
+from torch_rl.utils.utils import have_we_ran_out_of_time, develop_memory_for_dt_action_blocker
 from .agent import TDAgent
+from ..action_blocker.dt_action_blocker import DTActionBlocker
 
 
 def run(env, n_games, algorithm_type, is_double, gamma, mem_size, batch_size, network_args,
         optimizer_type, policy_type, policy_args={},
         replace=1000, optimizer_args={}, enable_action_blocking=False,
-        min_penalty=0, goal=None, assign_priority=False):
+        min_penalty=0, goal=None, assign_priority=False, use_ml_for_action_blocking=False,
+        action_blocking_model_name=None):
     input_dims = env.observation_space.shape if type(env.observation_space) == Box else (1,)
-    agent = TDAgent(algorithm_type, is_double, gamma, env.action_space, input_dims,
-                    mem_size, batch_size, network_args, optimizer_type, policy_type, policy_args,
-                    replace, optimizer_args, enable_action_blocking, min_penalty, goal, assign_priority)
+
+    if use_ml_for_action_blocking:
+        agent = TDAgent(algorithm_type, is_double, gamma, env.action_space.n, input_dims,
+                        mem_size, batch_size, network_args, optimizer_type, policy_type, policy_args,
+                        replace, optimizer_args, False, 0, goal, assign_priority)
+        memory = develop_memory_for_dt_action_blocker(env)
+        action_blocker = DTActionBlocker(env.observation_space, model_name=action_blocking_model_name,
+                                         memory=memory, penalty=min_penalty)
+        agent.action_blocker = action_blocker
+    else:
+        agent = TDAgent(algorithm_type, is_double, gamma, env.action_space, input_dims,
+                        mem_size, batch_size, network_args, optimizer_type, policy_type, policy_args,
+                        replace, optimizer_args, enable_action_blocking, min_penalty, goal, assign_priority)
 
     if type(n_games) == int:
         n_games_train = n_games

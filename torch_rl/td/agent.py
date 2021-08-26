@@ -55,7 +55,7 @@ class TDAgent:
     def choose_action(self, env, observation, train=True):
         original_action = self.choose_policy_action(observation, train)
         if self.enable_action_blocking:
-            actual_action = self.action_blocker.find_safe_action(env, original_action)
+            actual_action = self.action_blocker.find_safe_action(env, observation, original_action)
             self.initial_action_blocked = (actual_action is None or actual_action != original_action)
             if actual_action is None:
                 print('WARNING: No valid policy action found, running original action')
