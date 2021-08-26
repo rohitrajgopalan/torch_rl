@@ -20,6 +20,7 @@ def run(env, n_games, algorithm_type, is_double, gamma, mem_size, batch_size, ne
         action_blocker = DTActionBlocker(env.observation_space, model_name=action_blocking_model_name,
                                          memory=memory, penalty=min_penalty)
         agent.action_blocker = action_blocker
+        agent.enable_action_blocking = True
     else:
         agent = DuelingTDAgent(algorithm_type, is_double, gamma, env.action_space.n, input_dims,
                                mem_size, batch_size, network_args, optimizer_type, policy_type, policy_args,

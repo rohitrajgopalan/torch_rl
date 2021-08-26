@@ -22,6 +22,7 @@ def run_with_dt(env, n_games, learning_type, heuristic_func,
         action_blocker = DTActionBlocker(env.observation_space, model_name=action_blocking_model_name,
                                          memory=memory, penalty=min_penalty)
         agent.action_blocker = action_blocker
+        agent.enable_action_blocking = True
     else:
         agent = HeuristicWithDT(heuristic_func, use_model_only, env.action_space,
                                 enable_action_blocking, min_penalty, **args)
@@ -43,6 +44,7 @@ def run_with_td(env, n_games, learning_type, heuristic_func, use_model_only,
         action_blocker = DTActionBlocker(env.observation_space, model_name=action_blocking_model_name,
                                          memory=memory, penalty=min_penalty)
         agent.action_blocker = action_blocker
+        agent.enable_action_blocking = True
     else:
         agent = HeuristicWithTD(heuristic_func, use_model_only, algorithm_type, is_double, gamma,
                                 env.action_space, env.observation_space.shape, mem_size, batch_size,
@@ -66,6 +68,7 @@ def run_with_dueling_td(env, n_games, learning_type, heuristic_func, use_model_o
         action_blocker = DTActionBlocker(env.observation_space, model_name=action_blocking_model_name,
                                          memory=memory, penalty=min_penalty)
         agent.action_blocker = action_blocker
+        agent.enable_action_blocking = True
     else:
         agent = HeuristicWithDuelingTD(heuristic_func, use_model_only, algorithm_type, is_double, gamma,
                                        env.action_space, env.observation_space.shape, mem_size, batch_size,
