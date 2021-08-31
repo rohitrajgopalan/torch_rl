@@ -48,20 +48,21 @@ class TDAgent:
         if self.enable_action_blocking:
             self.action_blocker = ActionBlocker(action_space, min_penalty)
         self.initial_action_blocked = False
+        self.initial_action = None
 
         if model_name is not None:
             self.load_model(model_name)
 
     def choose_action(self, env, observation, train=True):
-        original_action = self.choose_policy_action(observation, train)
+        self.initial_action = self.choose_policy_action(observation, train)
         if self.enable_action_blocking:
-            actual_action = self.action_blocker.find_safe_action(env, observation, original_action)
-            self.initial_action_blocked = (actual_action is None or actual_action != original_action)
+            actual_action = self.action_blocker.find_safe_action(env, observation, self.initial_action)
+            self.initial_action_blocked = (actual_action is None or actual_action != self.initial_action)
             if actual_action is None:
                 print('WARNING: No valid policy action found, running original action')
-            return original_action if actual_action is None else actual_action
+            return self.initial_action if actual_action is None else actual_action
         else:
-            return original_action
+            return self.initial_action
 
     def choose_policy_action(self, observation, train=True):
         if not type(observation) == np.ndarray:

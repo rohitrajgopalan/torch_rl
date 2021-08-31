@@ -6,11 +6,11 @@ from .agent import TDAgent
 from ..action_blocker.dt_action_blocker import DTActionBlocker
 
 
-def run(env, n_games, algorithm_type, is_double, gamma, mem_size, batch_size, network_args,
-        optimizer_type, policy_type, policy_args={},
-        replace=1000, optimizer_args={}, enable_action_blocking=False,
-        min_penalty=0, goal=None, assign_priority=False, use_ml_for_action_blocking=False,
-        action_blocking_model_name=None):
+def create_agent(env, algorithm_type, is_double, gamma, mem_size, batch_size, network_args,
+                 optimizer_type, policy_type, policy_args={},
+                 replace=1000, optimizer_args={}, enable_action_blocking=False,
+                 min_penalty=0, goal=None, assign_priority=False, use_ml_for_action_blocking=False,
+                 action_blocking_model_name=None):
     input_dims = env.observation_space.shape if type(env.observation_space) == Box else (1,)
 
     if use_ml_for_action_blocking:
@@ -26,6 +26,18 @@ def run(env, n_games, algorithm_type, is_double, gamma, mem_size, batch_size, ne
         agent = TDAgent(algorithm_type, is_double, gamma, env.action_space, input_dims,
                         mem_size, batch_size, network_args, optimizer_type, policy_type, policy_args,
                         replace, optimizer_args, enable_action_blocking, min_penalty, goal, assign_priority)
+
+    return agent
+
+
+def run(env, n_games, algorithm_type, is_double, gamma, mem_size, batch_size, network_args,
+        optimizer_type, policy_type, policy_args={},
+        replace=1000, optimizer_args={}, enable_action_blocking=False,
+        min_penalty=0, goal=None, assign_priority=False, use_ml_for_action_blocking=False,
+        action_blocking_model_name=None):
+    agent = create_agent(env, algorithm_type, is_double, gamma, mem_size, batch_size, network_args,
+                         optimizer_type, policy_type, policy_args, replace, optimizer_args, enable_action_blocking,
+                         min_penalty, goal, assign_priority, use_ml_for_action_blocking, action_blocking_model_name)
 
     if type(n_games) == int:
         n_games_train = n_games
@@ -51,7 +63,7 @@ def run(env, n_games, algorithm_type, is_double, gamma, mem_size, batch_size, ne
                 reward *= -1
             score += reward
 
-            agent.store_transition(observation, agent.choose_policy_action(observation, True),
+            agent.store_transition(observation, agent.initial_action,
                                    reward, observation_, done)
             agent.learn()
 
