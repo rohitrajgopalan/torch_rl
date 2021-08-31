@@ -12,10 +12,8 @@ from .heuristic_with_td3 import HeuristicWithTD3
 from torch_rl.action_blocker.dt_action_blocker import DTActionBlocker
 
 
-def run_with_dt(env, n_games, learning_type, heuristic_func,
-                use_model_only, enable_action_blocking=False, min_penalty=0,
-                use_ml_for_action_blocking=False, action_blocking_model_name=None, **args):
-    assert learning_type == LearningType.OFFLINE
+def create_dt_heuristic_agent(env, heuristic_func, use_model_only, enable_action_blocking=False, min_penalty=0,
+                              use_ml_for_action_blocking=False, action_blocking_model_name=None, **args):
     if use_ml_for_action_blocking and type(env.action_space) == Discrete:
         agent = HeuristicWithDT(heuristic_func, use_model_only, env.action_space, False, 0, **args)
         memory = develop_memory_for_dt_action_blocker(env)
@@ -26,15 +24,15 @@ def run_with_dt(env, n_games, learning_type, heuristic_func,
     else:
         agent = HeuristicWithDT(heuristic_func, use_model_only, env.action_space,
                                 enable_action_blocking, min_penalty, **args)
-    return run(env, n_games, agent, learning_type)
+    return agent
 
 
-def run_with_td(env, n_games, learning_type, heuristic_func, use_model_only,
-                algorithm_type, is_double, gamma, mem_size, batch_size, network_args,
-                optimizer_type, policy_type, policy_args={},
-                replace=1000, optimizer_args={}, enable_action_blocking=False,
-                min_penalty=0, goal=None, add_conservative_loss=False, alpha=0.001,
-                use_ml_for_action_blocking=False, action_blocking_model_name=None, **args):
+def create_td_heuristic_agent(env, heuristic_func, use_model_only,
+                              algorithm_type, is_double, gamma, mem_size, batch_size, network_args,
+                              optimizer_type, policy_type, policy_args={},
+                              replace=1000, optimizer_args={}, enable_action_blocking=False,
+                              min_penalty=0, goal=None, add_conservative_loss=False, alpha=0.001,
+                              use_ml_for_action_blocking=False, action_blocking_model_name=None, **args):
     if use_ml_for_action_blocking:
         agent = HeuristicWithTD(heuristic_func, use_model_only, algorithm_type, is_double, gamma,
                                 env.action_space, env.observation_space.shape, mem_size, batch_size,
@@ -50,15 +48,15 @@ def run_with_td(env, n_games, learning_type, heuristic_func, use_model_only,
                                 env.action_space, env.observation_space.shape, mem_size, batch_size,
                                 network_args, optimizer_type, policy_type, policy_args, replace, optimizer_args,
                                 enable_action_blocking, min_penalty, goal, add_conservative_loss, alpha, **args)
-    return run(env, n_games, agent, learning_type)
+    return agent
 
 
-def run_with_dueling_td(env, n_games, learning_type, heuristic_func, use_model_only,
-                        algorithm_type, is_double, gamma, mem_size, batch_size, network_args,
-                        optimizer_type, policy_type, policy_args={},
-                        replace=1000, optimizer_args={}, enable_action_blocking=False,
-                        min_penalty=0, goal=None, add_conservative_loss=False, alpha=0.001,
-                        use_ml_for_action_blocking=False, action_blocking_model_name=None, **args):
+def create_dueling_td_heuristic_agent(env, heuristic_func, use_model_only,
+                                      algorithm_type, is_double, gamma, mem_size, batch_size, network_args,
+                                      optimizer_type, policy_type, policy_args={},
+                                      replace=1000, optimizer_args={}, enable_action_blocking=False,
+                                      min_penalty=0, goal=None, add_conservative_loss=False, alpha=0.001,
+                                      use_ml_for_action_blocking=False, action_blocking_model_name=None, **args):
     if use_ml_for_action_blocking:
         agent = HeuristicWithDuelingTD(heuristic_func, use_model_only, algorithm_type, is_double, gamma,
                                        env.action_space, env.observation_space.shape, mem_size, batch_size,
@@ -74,6 +72,67 @@ def run_with_dueling_td(env, n_games, learning_type, heuristic_func, use_model_o
                                        env.action_space, env.observation_space.shape, mem_size, batch_size,
                                        network_args, optimizer_type, policy_type, policy_args, replace, optimizer_args,
                                        enable_action_blocking, min_penalty, goal, add_conservative_loss, alpha, **args)
+    return agent
+
+
+def create_ddpg_heuristic_agent(env, heuristic_func, use_model_only, tau, network_args,
+                                actor_optimizer_type,
+                                critic_optimizer_type, actor_optimizer_args={}, critic_optimizer_args={}, gamma=0.99,
+                                max_size=1000000, batch_size=64, goal=None, **args):
+    return HeuristicWithDDPG(heuristic_func, use_model_only, env.observation_space.shape, env.action_space, tau,
+                             network_args, actor_optimizer_type,
+                             critic_optimizer_type, actor_optimizer_args, critic_optimizer_args, gamma,
+                             max_size, batch_size, goal, **args)
+
+
+def create_td3_heuristic_agent(env, heuristic_func, use_model_only, tau, network_args,
+                               actor_optimizer_type,
+                               critic_optimizer_type, actor_optimizer_args={}, critic_optimizer_args={}, gamma=0.99,
+                               max_size=1000000, batch_size=64, policy_update_interval=2, noise_std=0.2,
+                               noise_clip=0.5, goal=None, **args):
+    return HeuristicWithTD3(heuristic_func, use_model_only, env.observation_space.shape, env.action_space, tau,
+                            network_args,
+                            actor_optimizer_type, critic_optimizer_type, actor_optimizer_args, critic_optimizer_args,
+                            gamma, max_size, batch_size, policy_update_interval, noise_std,
+                            noise_clip, goal, **args)
+
+
+def run_with_dt(env, n_games, learning_type, heuristic_func,
+                use_model_only, enable_action_blocking=False, min_penalty=0,
+                use_ml_for_action_blocking=False, action_blocking_model_name=None, **args):
+    assert learning_type == LearningType.OFFLINE
+    agent = create_dt_heuristic_agent(env, heuristic_func, use_model_only, enable_action_blocking, min_penalty,
+                                      use_ml_for_action_blocking, action_blocking_model_name, **args)
+    return run(env, n_games, agent, learning_type)
+
+
+def run_with_td(env, n_games, learning_type, heuristic_func, use_model_only,
+                algorithm_type, is_double, gamma, mem_size, batch_size, network_args,
+                optimizer_type, policy_type, policy_args={},
+                replace=1000, optimizer_args={}, enable_action_blocking=False,
+                min_penalty=0, goal=None, add_conservative_loss=False, alpha=0.001,
+                use_ml_for_action_blocking=False, action_blocking_model_name=None, **args):
+    agent = create_td_heuristic_agent(env, heuristic_func, use_model_only,
+                                      algorithm_type, is_double, gamma, mem_size, batch_size, network_args,
+                                      optimizer_type, policy_type, policy_args,
+                                      replace, optimizer_args, enable_action_blocking,
+                                      min_penalty, goal, add_conservative_loss, alpha,
+                                      use_ml_for_action_blocking, action_blocking_model_name, **args)
+    return run(env, n_games, agent, learning_type)
+
+
+def run_with_dueling_td(env, n_games, learning_type, heuristic_func, use_model_only,
+                        algorithm_type, is_double, gamma, mem_size, batch_size, network_args,
+                        optimizer_type, policy_type, policy_args={},
+                        replace=1000, optimizer_args={}, enable_action_blocking=False,
+                        min_penalty=0, goal=None, add_conservative_loss=False, alpha=0.001,
+                        use_ml_for_action_blocking=False, action_blocking_model_name=None, **args):
+    agent = create_dueling_td_heuristic_agent(env, heuristic_func, use_model_only,
+                                              algorithm_type, is_double, gamma, mem_size, batch_size, network_args,
+                                              optimizer_type, policy_type, policy_args,
+                                              replace, optimizer_args, enable_action_blocking,
+                                              min_penalty, goal, add_conservative_loss, alpha,
+                                              use_ml_for_action_blocking, action_blocking_model_name, **args)
     return run(env, n_games, agent, learning_type)
 
 
@@ -81,10 +140,10 @@ def run_with_ddpg(env, n_games, learning_type, heuristic_func, use_model_only, t
                   actor_optimizer_type,
                   critic_optimizer_type, actor_optimizer_args={}, critic_optimizer_args={}, gamma=0.99,
                   max_size=1000000, batch_size=64, goal=None, **args):
-    agent = HeuristicWithDDPG(heuristic_func, use_model_only, env.observation_space.shape, env.action_space, tau,
-                              network_args, actor_optimizer_type,
-                              critic_optimizer_type, actor_optimizer_args, critic_optimizer_args, gamma,
-                              max_size, batch_size, goal, **args)
+    agent = create_ddpg_heuristic_agent(env, heuristic_func, use_model_only, tau,
+                                        network_args, actor_optimizer_type,
+                                        critic_optimizer_type, actor_optimizer_args, critic_optimizer_args, gamma,
+                                        max_size, batch_size, goal, **args)
     return run(env, n_games, agent, learning_type)
 
 
@@ -93,11 +152,11 @@ def run_with_td3(env, n_games, learning_type, heuristic_func, use_model_only, ta
                  critic_optimizer_type, actor_optimizer_args={}, critic_optimizer_args={}, gamma=0.99,
                  max_size=1000000, batch_size=64, policy_update_interval=2, noise_std=0.2,
                  noise_clip=0.5, goal=None, **args):
-    agent = HeuristicWithTD3(heuristic_func, use_model_only, env.observation_space.shape, env.action_space, tau,
-                             network_args,
-                             actor_optimizer_type, critic_optimizer_type, actor_optimizer_args, critic_optimizer_args,
-                             gamma, max_size, batch_size, policy_update_interval, noise_std,
-                             noise_clip, goal, **args)
+    agent = create_td3_heuristic_agent(env, heuristic_func, use_model_only, tau, network_args,
+                                       actor_optimizer_type,
+                                       critic_optimizer_type, actor_optimizer_args, critic_optimizer_args, gamma,
+                                       max_size, batch_size, policy_update_interval, noise_std,
+                                       noise_clip, goal, **args)
     return run(env, n_games, agent, learning_type)
 
 
@@ -130,8 +189,7 @@ def run(env, n_games, agent, learning_type):
                     reward *= -1
                 score += reward
 
-                agent.store_transition(observation, agent.get_original_action(learning_type,
-                                                                              observation, True, t),
+                agent.store_transition(observation, agent.initial_action,
                                        reward, observation_, done)
 
                 observation = observation_

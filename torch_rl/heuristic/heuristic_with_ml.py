@@ -21,19 +21,21 @@ class HeuristicWithML:
             self.enable_action_blocking = False
             self.action_blocker = None
         self.initial_action_blocked = False
+        self.initial_action = None
+        
         for arg in args:
             setattr(self, arg, args[arg])
 
     def get_action(self, env, learning_type, observation, train=True, **args):
-        original_action = self.get_original_action(learning_type, observation, train, **args)
+        self.initial_action = self.get_original_action(learning_type, observation, train, **args)
         if self.enable_action_blocking:
-            actual_action = self.action_blocker.find_safe_action(env, observation, original_action)
-            self.initial_action_blocked = (actual_action is None or actual_action != original_action)
+            actual_action = self.action_blocker.find_safe_action(env, observation, self.initial_action)
+            self.initial_action_blocked = (actual_action is None or actual_action != self.initial_action)
             if actual_action is None:
                 print('WARNING: No valid policy action found, running original action')
-            return original_action if actual_action is None else actual_action
+            return self.initial_action if actual_action is None else actual_action
         else:
-            return original_action
+            return self.initial_action
 
     def get_original_action(self, learning_type, observation, train=True, **args):
         heuristic_action = self.heuristic_func(self, observation)
