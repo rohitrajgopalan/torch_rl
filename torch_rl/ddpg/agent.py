@@ -56,9 +56,6 @@ class DDPGAgent:
         else:
             self.memory = ReplayBuffer(max_size, input_dims, action_space.shape[0], self.goal)
 
-        self.policy_loss_history = []
-        self.value_loss_history = []
-
         self.action_space = action_space
 
         if model_name is not None:
@@ -170,9 +167,6 @@ class DDPGAgent:
         self.actor.optimizer.step()
 
         self.update_network_parameters()
-
-        self.policy_loss_history.append(abs(actor_loss.item()))
-        self.value_loss_history.append(critic_loss.item())
 
     def load_model(self, model_name):
         self.actor.load_model('{0}_actor'.format(model_name))

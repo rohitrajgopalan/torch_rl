@@ -12,14 +12,18 @@ from ..utils.types import TDAlgorithmType, PolicyType, LearningType
 class HeuristicWithDuelingTD(HeuristicWithML, DuelingTDAgent):
     def __init__(self, heuristic_func, use_model_only, algorithm_type, is_double, gamma, action_space, input_dims,
                  mem_size, batch_size, network_args, optimizer_type, policy_type, policy_args={},
-                 replace=1000, optimizer_args={}, goal=None, enable_action_blocking=False,
-                 min_penalty=0, add_conservative_loss=False, alpha=0.001, model_name=None, **args):
+                 replace=1000, optimizer_args={}, goal=None, enable_action_blocking=False, min_penalty=0,
+                 use_ml_for_action_blocker=False, action_blocker_memory=None, action_blocker_model_name=None,
+                 add_conservative_loss=False, alpha=0.001, model_name=None, **args):
         HeuristicWithML.__init__(self, heuristic_func, use_model_only, action_space, enable_action_blocking,
-                                 min_penalty, **args)
+                                 min_penalty, use_ml_for_action_blocker, action_blocker_memory,
+                                 action_blocker_model_name, **args)
         DuelingTDAgent.__init__(self, algorithm_type, is_double, gamma, action_space, input_dims, mem_size, batch_size,
                                 network_args,
                                 optimizer_type, policy_type, policy_args, replace, optimizer_args,
-                                enable_action_blocking, min_penalty, goal, False, model_name)
+                                enable_action_blocking, min_penalty,
+                                use_ml_for_action_blocker, action_blocker_memory, action_blocker_model_name,
+                                goal, False, model_name)
         self.add_conservative_loss = add_conservative_loss
         self.alpha = alpha
 

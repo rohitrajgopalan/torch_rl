@@ -1,6 +1,7 @@
 from gym.spaces import Discrete, Box
 
 from torch_rl.action_blocker.action_blocker import ActionBlocker
+from torch_rl.action_blocker.dt_action_blocker import DTActionBlocker
 from torch_rl.utils.types import LearningType
 import copy
 import numpy as np
@@ -8,15 +9,18 @@ import numpy as np
 
 class HeuristicWithML:
     def __init__(self, heuristic_func, use_model_only, action_space, enable_action_blocking=False, min_penalty=0,
+                 use_ml_for_action_blocker=False, action_blocker_memory=None, action_blocker_model_name=None,
                  **args):
         self.heuristic_func = heuristic_func
         self.use_model_only = use_model_only
         self.is_continuous = type(action_space) == Box
-        self.num_heuristic_actions_chosen = 0
-        self.num_predicted_actions_chosen = 0
         if type(action_space) == Discrete and enable_action_blocking:
             self.enable_action_blocking = True
-            self.action_blocker = ActionBlocker(action_space, min_penalty)
+            if use_ml_for_action_blocker:
+                self.action_blocker = DTActionBlocker(action_space, penalty=min_penalty, memory=action_blocker_memory,
+                                                      model_name=action_blocker_model_name)
+            else:
+                self.action_blocker = ActionBlocker(action_space, min_penalty)
         else:
             self.enable_action_blocking = False
             self.action_blocker = None
@@ -41,34 +45,24 @@ class HeuristicWithML:
         heuristic_action = self.heuristic_func(self, observation)
         predicted_action = self.predict_action(observation, train, **args)
         if learning_type == LearningType.OFFLINE and train:
-            self.num_heuristic_actions_chosen += 1
             return heuristic_action
         else:
             if self.use_model_only:
-                self.num_predicted_actions_chosen += 1
                 return predicted_action
             else:
                 if type(predicted_action) == np.ndarray and type(heuristic_action) == np.ndarray:
                     if np.array_equal(predicted_action, heuristic_action):
-                        self.num_predicted_actions_chosen += 1
                         return predicted_action
                     else:
-                        self.num_heuristic_actions_chosen += 1
                         return heuristic_action
                 else:
                     if predicted_action == heuristic_action:
-                        self.num_predicted_actions_chosen += 1
                         return predicted_action
                     else:
-                        self.num_heuristic_actions_chosen += 1
                         return heuristic_action
 
     def predict_action(self, observation, train, **args):
         raise NotImplemented('Not implemented predict_action')
-
-    def reset_metrics(self):
-        self.num_heuristic_actions_chosen = 0
-        self.num_predicted_actions_chosen = 0
 
     def store_transition(self, state, action, reward, state_, done):
         pass

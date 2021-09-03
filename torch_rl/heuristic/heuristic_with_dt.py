@@ -7,9 +7,11 @@ import joblib
 
 
 class HeuristicWithDT(HeuristicWithML):
-    def __init__(self, heuristic_func, use_model_only, action_space, enable_action_blocking=False,
-                 min_penalty=0, model_name=None, **args):
-        super().__init__(heuristic_func, use_model_only, action_space, enable_action_blocking, min_penalty, **args)
+    def __init__(self, heuristic_func, use_model_only, action_space, enable_action_blocking=False, min_penalty=0,
+                 use_ml_for_action_blocker=False, action_blocker_memory=None, action_blocker_model_name=None,
+                 model_name=None, **args):
+        super().__init__(heuristic_func, use_model_only, action_space, enable_action_blocking, min_penalty,
+                         use_ml_for_action_blocker, action_blocker_memory, action_blocker_model_name, **args)
         if model_name is None:
             self.model = DecisionTreeRegressor() if self.is_continuous else DecisionTreeClassifier()
         else:

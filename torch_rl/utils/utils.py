@@ -1,12 +1,11 @@
 import torch.optim as optimizer
 
-from .types import NetworkOptimizer, PolicyType
 from torch_rl.policy.epsilon_greedy import EpsilonGreedyPolicy
 from torch_rl.policy.softmax import SoftmaxPolicy
 from torch_rl.policy.thompson_sampling import ThompsonSamplingPolicy
 from torch_rl.policy.upper_confidence_bound import UpperConfidenceBoundPolicy
+from .types import NetworkOptimizer, PolicyType
 from ..policy.policy import Policy
-from torch_rl.replay.replay import ReplayBuffer
 
 
 def get_torch_optimizer(params, optimizer_type, optimizer_args):
@@ -85,10 +84,6 @@ def choose_policy(num_actions, policy_type, policy_args):
         return Policy(num_actions, move_matrix)
 
 
-def have_we_ran_out_of_time(env, current_t):
-    return hasattr(env, '_max_episode_steps') and current_t == env._max_episode_steps
-
-
 def get_hidden_layer_sizes(fc_dims):
     if type(fc_dims) == int:
         return fc_dims, fc_dims
@@ -96,21 +91,3 @@ def get_hidden_layer_sizes(fc_dims):
         return fc_dims[0], fc_dims[1]
     else:
         raise TypeError('fc_dims should be integer, list or tuple')
-
-
-def develop_memory_for_dt_action_blocker(env, max_time_steps=1000000):
-    memory = ReplayBuffer(max_time_steps, env.observation_space.shape)
-
-    obs = env.reset()
-    for _ in range(max_time_steps):
-        action = env.action_space.sample()
-        obs_, reward, done, _ = env.step(action)
-
-        memory.store_transition(obs, action, reward, obs_, done)
-
-        if done:
-            env.reset()
-
-    return memory
-
-

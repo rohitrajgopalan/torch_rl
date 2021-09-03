@@ -6,13 +6,15 @@ from torch_rl.replay.priority_replay import PriorityReplayBuffer
 from torch_rl.utils.utils import choose_policy
 from torch_rl.utils.types import PolicyType, TDAlgorithmType
 from ..action_blocker.action_blocker import ActionBlocker
+from ..action_blocker.dt_action_blocker import DTActionBlocker
 
 
 class TDAgent:
     def __init__(self, algorithm_type, is_double, gamma, action_space, input_dims,
                  mem_size, batch_size, network_args, optimizer_type, policy_type, policy_args={},
-                 replace=1000, optimizer_args={}, enable_action_blocking=False,
-                 min_penalty=0, goal=None, assign_priority=False, model_name=None):
+                 replace=1000, optimizer_args={}, enable_action_blocking=False, min_penalty=0,
+                 use_ml_for_action_blocker=False, action_blocker_memory=None, action_blocker_model_name=None,
+                 goal=None, assign_priority=False, model_name=None):
         self.algorithm_type = algorithm_type
         self.is_double = is_double
         self.gamma = gamma
@@ -41,12 +43,15 @@ class TDAgent:
             self.memory = PriorityReplayBuffer(mem_size, input_dims, goal=self.goal)
         else:
             self.memory = ReplayBuffer(mem_size, input_dims, goal=self.goal)
-        self.loss_history = []
 
         self.enable_action_blocking = enable_action_blocking
         self.action_blocker = None
         if self.enable_action_blocking:
-            self.action_blocker = ActionBlocker(action_space, min_penalty)
+            if use_ml_for_action_blocker:
+                self.action_blocker = DTActionBlocker(action_space, penalty=min_penalty, memory=action_blocker_memory,
+                                                      model_name=action_blocker_model_name)
+            else:
+                self.action_blocker = ActionBlocker(action_space, min_penalty)
         self.initial_action_blocked = False
         self.initial_action = None
 
@@ -213,8 +218,6 @@ class TDAgent:
         elif self.policy_type == PolicyType.THOMPSON_SAMPLING:
             for reward in rewards:
                 self.policy.update(reward=reward)
-
-        self.loss_history.append(loss.item())
 
     def load_model(self, model_name):
         self.q_eval.load_model('{0}_q_eval'.format(model_name))

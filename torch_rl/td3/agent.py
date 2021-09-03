@@ -73,9 +73,6 @@ class TD3Agent:
         else:
             self.memory = ReplayBuffer(max_size, input_dims, action_space.shape[0], self.goal)
 
-        self.policy_loss_history = []
-        self.value1_loss_history = []
-        self.value2_loss_history = []
         self.learn_step_cntr = 0
         self.action_space = action_space
 
@@ -119,7 +116,8 @@ class TD3Agent:
     def get_critic_value(self, observation, action, use_target=False):
         state = T.tensor([observation], dtype=T.float).to(self.target_actor.device if use_target else self.actor.device)
         if self.goal is not None:
-            goal = T.tensor([self.goal], dtype=T.float).to(self.target_actor.device if use_target else self.actor.device)
+            goal = T.tensor([self.goal], dtype=T.float).to(
+                self.target_actor.device if use_target else self.actor.device)
             inputs = T.cat([state, goal], dim=1)
         else:
             inputs = state
@@ -219,10 +217,6 @@ class TD3Agent:
         self.actor.optimizer.step()
 
         self.update_network_parameters()
-
-        self.policy_loss_history.append(abs(actor_loss.item()))
-        self.value1_loss_history.append(critic_loss1.item())
-        self.value2_loss_history.append(critic_loss2.item())
 
     def load_model(self, model_name):
         self.actor.load_model('{0}_actor'.format(model_name))
