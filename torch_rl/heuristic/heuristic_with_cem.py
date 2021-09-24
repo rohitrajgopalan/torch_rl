@@ -10,7 +10,7 @@ class HeuristicWithCEM(HeuristicWithML, CEMAgent):
     def __init__(self, heuristic_func, use_model_only,
                  input_dims, action_space, network_args, gamma=1.0, pop_size=50, elite_frac=0.2, sigma=0.5,
                  goal=None, **args):
-        HeuristicWithML.__init__(self, heuristic_func, use_model_only, action_space, False, 0, **args)
+        HeuristicWithML.__init__(self, input_dims, heuristic_func, use_model_only, action_space, False, 0, **args)
         CEMAgent.__init__(input_dims, action_space, network_args, gamma, pop_size, elite_frac, sigma, goal)
 
     def predict_action(self, observation, train, **args):

@@ -6,7 +6,7 @@ from torch_rl.utils.utils import get_torch_optimizer, get_hidden_layer_sizes
 
 
 class DuelingTDNetwork(nn.Module):
-    def __init__(self, input_dims, n_actions, network_args, optimizer_type, optimizer_args={}):
+    def __init__(self, input_dims, n_actions, network_args, optimizer_type, optimizer_args={}, use_mse=True):
         super(DuelingTDNetwork, self).__init__()
 
         self.input_dim_len = len(input_dims)
@@ -35,7 +35,7 @@ class DuelingTDNetwork(nn.Module):
         self.A = nn.Linear(fc2_dims, n_actions)
 
         self.optimizer = get_torch_optimizer(self.parameters(), optimizer_type, optimizer_args)
-        self.loss = nn.MSELoss()
+        self.loss = nn.MSELoss() if use_mse else nn.SmoothL1Loss()
         self.device = T.device('cuda:0' if T.cuda.is_available() else 'cpu')
         self.to(self.device)
 

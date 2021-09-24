@@ -10,11 +10,12 @@ from .heuristic_with_ml import HeuristicWithML
 class HeuristicWithDDPG(HeuristicWithML, DDPGAgent):
     def __init__(self, heuristic_func, use_model_only, input_dims, action_space, tau, network_args, actor_optimizer_type,
                  critic_optimizer_type, actor_optimizer_args={}, critic_optimizer_args={}, gamma=0.99,
-                 max_size=1000000, batch_size=64, goal=None, model_name=None, **args):
-        HeuristicWithML.__init__(self, heuristic_func, use_model_only, action_space, False, 0, **args)
+                 max_size=1000000, batch_size=64, goal=None, model_name=None, pre_loaded_memory=None,
+                 use_mse=True, **args):
+        HeuristicWithML.__init__(self, input_dims, heuristic_func, use_model_only, action_space, False, 0, **args)
         DDPGAgent.__init__(input_dims, action_space, tau, network_args, actor_optimizer_type, critic_optimizer_type,
                            actor_optimizer_args, critic_optimizer_args, gamma,
-                           max_size, batch_size, goal, False, model_name)
+                           max_size, batch_size, goal, False, model_name, pre_loaded_memory, use_mse)
 
     def optimize(self, env, learning_type):
         num_updates = int(math.ceil(self.memory.mem_cntr / self.batch_size))
@@ -53,7 +54,7 @@ class HeuristicWithDDPG(HeuristicWithML, DDPGAgent):
             target = target.view(self.batch_size, 1)
 
             self.critic.optimizer.zero_grad()
-            critic_loss = F.mse_loss(target, critic_value)
+            critic_loss = F.mse_loss(target, critic_value) if self.use_mse else F.smooth_l1_loss(target, critic_value)
             critic_loss.backward()
             self.critic.optimizer.step()
 

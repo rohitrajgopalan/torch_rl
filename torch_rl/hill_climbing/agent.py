@@ -1,12 +1,13 @@
 import numpy as np
 
 from torch_rl.action_blocker.action_blocker import ActionBlocker
-from torch_rl.action_blocker.dt_action_blocker import DTActionBlocker
+from torch_rl.replay.replay import ReplayBuffer
 
 
 class HillClimbingAgent:
     def __init__(self, input_dims, action_space, gamma, noise_scale=1e-2, enable_action_blocking=False, min_penalty=0,
-                 use_ml_for_action_blocker=False, action_blocker_memory=None, action_blocker_model_name=None):
+                 action_blocker_memory=None, action_blocker_model_name=None,
+                 action_blocker_timesteps=1000000, action_blocker_model_type=None):
 
         self.num_actions = action_space.n
 
@@ -20,11 +21,13 @@ class HillClimbingAgent:
         self.initial_action_blocked = False
         self.initial_action = None
         if self.enable_action_blocking:
-            if use_ml_for_action_blocker:
-                self.action_blocker = DTActionBlocker(action_space, penalty=min_penalty, memory=action_blocker_memory,
-                                                      model_name=action_blocker_model_name)
+            if action_blocker_memory is None:
+                action_blocker_memory = ReplayBuffer(input_shape=input_dims, max_size=action_blocker_timesteps)
             else:
-                self.action_blocker = ActionBlocker(action_space, min_penalty)
+                action_blocker_memory.add_more_memory(extra_mem_size=action_blocker_timesteps)
+            self.action_blocker = ActionBlocker(action_space, penalty=min_penalty, memory=action_blocker_memory,
+                                                model_name=action_blocker_model_name,
+                                                model_type=action_blocker_model_type)
 
         self.gamma = gamma
         self.noise_scale = noise_scale
@@ -36,6 +39,8 @@ class HillClimbingAgent:
 
     def store_transition(self, state, action, reward, state_, done):
         self.rewards.append(reward)
+        if type(self.action_blocker) == ActionBlocker:
+            self.action_blocker.store_transition(state, action, reward, state_, done)
 
     def learn(self):
         discounts = [self.gamma ** i for i in range(len(self.rewards) + 1)]
@@ -51,10 +56,13 @@ class HillClimbingAgent:
             self.w = self.best_w + self.noise_scale * np.random.rand(*self.w.shape)
 
         self.rewards = []
+        if type(self.action_blocker) == ActionBlocker:
+            self.action_blocker.optimize()
 
-    def choose_action(self, env, observation, train=True):
+    def choose_action(self, env, learning_type, observation, train=True):
         self.initial_action = self.choose_policy_action(observation, train)
         if self.enable_action_blocking:
+            self.action_blocker.assign_learning_type(learning_type)
             actual_action = self.action_blocker.find_safe_action(env, observation, self.initial_action)
             self.initial_action_blocked = (actual_action is None or actual_action != self.initial_action)
             if actual_action is None:

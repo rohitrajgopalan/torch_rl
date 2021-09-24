@@ -1,20 +1,21 @@
 import numpy as np
 import torch as T
-from .network import DuelingTDNetwork
-from torch_rl.replay.replay import ReplayBuffer
+
 from torch_rl.replay.priority_replay import PriorityReplayBuffer
+from torch_rl.replay.replay import ReplayBuffer
 from torch_rl.utils.types import PolicyType, TDAlgorithmType
 from torch_rl.utils.utils import choose_policy
+from .network import DuelingTDNetwork
 from ..action_blocker.action_blocker import ActionBlocker
-from ..action_blocker.dt_action_blocker import DTActionBlocker
 
 
 class DuelingTDAgent:
     def __init__(self, algorithm_type, is_double, gamma, action_space, input_dims,
                  mem_size, batch_size, network_args, optimizer_type, policy_type, policy_args={},
                  replace=1000, optimizer_args={}, enable_action_blocking=False, min_penalty=0,
-                 use_ml_for_action_blocker=False, action_blocker_memory=None, action_blocker_model_name=None,
-                 goal=None, assign_priority=False, model_name=None):
+                 pre_loaded_memory=None, action_blocker_model_name=None,
+                 goal=None, assign_priority=False, model_name=None, action_blocker_timesteps=1000000,
+                 action_blocker_model_type=None, use_mse=True):
         self.algorithm_type = algorithm_type
         self.is_double = is_double
         self.gamma = gamma
@@ -33,15 +34,15 @@ class DuelingTDAgent:
                 self.goal = np.array([self.goal]).astype(np.float32)
             self.q_eval = DuelingTDNetwork(tuple(np.add(self.input_dims, self.goal.shape)), self.n_actions,
                                            network_args, optimizer_type,
-                                           optimizer_args)
+                                           optimizer_args, use_mse)
             self.q_next = DuelingTDNetwork(tuple(np.add(self.input_dims, self.goal.shape)), self.n_actions,
                                            network_args, optimizer_type,
-                                           optimizer_args)
+                                           optimizer_args, use_mse)
         else:
             self.q_eval = DuelingTDNetwork(self.input_dims, self.n_actions, network_args, optimizer_type,
-                                           optimizer_args)
+                                           optimizer_args, use_mse)
             self.q_next = DuelingTDNetwork(self.input_dims, self.n_actions, network_args, optimizer_type,
-                                           optimizer_args)
+                                           optimizer_args, use_mse)
 
         if assign_priority:
             self.memory = PriorityReplayBuffer(mem_size, input_dims, goal=self.goal)
@@ -51,12 +52,16 @@ class DuelingTDAgent:
         self.enable_action_blocking = enable_action_blocking
         self.action_blocker = None
 
+        self.learn(pre_loaded_memory)
+
         if self.enable_action_blocking:
-            if use_ml_for_action_blocker:
-                self.action_blocker = DTActionBlocker(action_space, penalty=min_penalty, memory=action_blocker_memory,
-                                                      model_name=action_blocker_model_name)
+            if pre_loaded_memory is None:
+                pre_loaded_memory = ReplayBuffer(input_shape=input_dims, max_size=action_blocker_timesteps)
             else:
-                self.action_blocker = ActionBlocker(action_space, min_penalty)
+                pre_loaded_memory.add_more_memory(extra_mem_size=action_blocker_timesteps)
+            self.action_blocker = ActionBlocker(action_space, penalty=min_penalty, memory=pre_loaded_memory,
+                                                model_name=action_blocker_model_name,
+                                                model_type=action_blocker_model_type)
 
         self.initial_action_blocked = False
         self.initial_action = None
@@ -64,9 +69,10 @@ class DuelingTDAgent:
         if model_name is not None:
             self.load_model(model_name)
 
-    def choose_action(self, env, observation, train=True):
+    def choose_action(self, env, learning_type, observation, train=True):
         self.initial_action = self.choose_policy_action(observation, train)
         if self.enable_action_blocking:
+            self.action_blocker.assign_learning_type(learning_type)
             actual_action = self.action_blocker.find_safe_action(env, observation, self.initial_action)
             self.initial_action_blocked = (actual_action is None or actual_action != self.initial_action)
             if actual_action is None:
@@ -112,6 +118,8 @@ class DuelingTDAgent:
     def store_transition(self, state, action, reward, state_, done):
         self.memory.store_transition(state, action, reward, state_, done,
                                      error_val=self.determine_error(state, action, reward, state_, done))
+        if self.enable_action_blocking:
+            self.action_blocker.store_transition(state, action, reward, state_, done)
 
     def determine_error(self, state, action, reward, state_, done):
         done = int(done)
@@ -169,15 +177,19 @@ class DuelingTDAgent:
         if self.learn_step_counter % self.replace_target_cnt == 0:
             self.q_next.load_state_dict(self.q_eval.state_dict())
 
-    def learn(self):
-        if self.memory.mem_cntr < self.batch_size:
+    def learn(self, pre_loaded_memory=None):
+        if self.memory.mem_cntr < self.batch_size and pre_loaded_memory is None:
             return
 
         self.q_eval.optimizer.zero_grad()
 
         self.replace_target_network()
 
-        state, action, reward, new_state, done, goals = self.memory.sample_buffer(self.batch_size)
+        if pre_loaded_memory is not None:
+            pre_loaded_memory.goal = self.goal
+            state, action, reward, new_state, done, goals = pre_loaded_memory.sample_buffer(randomized=False)
+        else:
+            state, action, reward, new_state, done, goals = self.memory.sample_buffer(self.batch_size)
 
         states = T.tensor(state).to(self.q_eval.device)
         rewards = T.tensor(reward).to(self.q_eval.device)
@@ -239,6 +251,9 @@ class DuelingTDAgent:
         elif self.policy_type == PolicyType.THOMPSON_SAMPLING:
             for reward in rewards:
                 self.policy.update(reward=reward)
+
+        if type(self.action_blocker) == ActionBlocker:
+            self.action_blocker.optimize()
 
     def load_model(self, model_name):
         self.q_eval.load_model('{0}_q_eval'.format(model_name))

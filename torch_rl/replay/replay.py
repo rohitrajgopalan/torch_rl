@@ -6,6 +6,8 @@ class ReplayBuffer:
         self.mem_size = max_size
         self.mem_cntr = 0
         self.input_shape = input_shape
+        self.n_action_dims = n_action_dims
+        self.goal = goal
 
         self.state_memory = np.zeros((self.mem_size, *input_shape), dtype=np.float32)
         self.new_state_memory = np.zeros((self.mem_size, *input_shape), dtype=np.float32)
@@ -65,3 +67,23 @@ class ReplayBuffer:
             goals = self.goal_memory[batch]
 
         return states, actions, rewards, states_, dones, goals
+
+    def add_more_memory(self, extra_mem_size):
+        old_mem_size = self.mem_size
+        self.mem_size += extra_mem_size
+
+        self.state_memory.resize((self.mem_size, *self.input_shape))
+        self.new_state_memory.resize((self.mem_size, *self.input_shape))
+
+        if self.n_action_dims == 1:
+            self.action_memory.resize(self.mem_size)
+        else:
+            self.action_memory.resize((self.mem_size, self.n_action_dims))
+
+        self.reward_memory.resize(self.mem_size)
+        self.terminal_memory.resize(self.mem_size)
+
+        if self.goal is not None:
+            self.goal_memory.resize((self.mem_size, self.goal.shape[0]))
+            for i in range(old_mem_size, self.mem_size):
+                self.goal_memory[i] = self.goal

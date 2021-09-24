@@ -6,7 +6,7 @@ from torch_rl.utils.utils import get_torch_optimizer, get_hidden_layer_sizes
 
 
 class FCTDNetwork(nn.Module):
-    def __init__(self, input_dims, n_actions, fc_dims, optimizer_type, optimizer_args={}):
+    def __init__(self, input_dims, n_actions, fc_dims, optimizer_type, optimizer_args={}, use_mse=True):
         super(FCTDNetwork, self).__init__()
 
         fc1_dims, fc2_dims = get_hidden_layer_sizes(fc_dims)
@@ -25,7 +25,7 @@ class FCTDNetwork(nn.Module):
         )
 
         self.optimizer = get_torch_optimizer(self.parameters(), optimizer_type, optimizer_args)
-        self.loss = nn.MSELoss()
+        self.loss = nn.MSELoss() if use_mse else nn.SmoothL1Loss()
         self.device = T.device('cuda:0' if T.cuda.is_available() else 'cpu')
         self.to(self.device)
 
@@ -47,7 +47,7 @@ class FCTDNetwork(nn.Module):
 
 
 class CNNTDNetwork(nn.Module):
-    def __init__(self, input_dims, n_actions, cnn_dims, fc_dim, optimizer_type, optimizer_args={}):
+    def __init__(self, input_dims, n_actions, cnn_dims, fc_dim, optimizer_type, optimizer_args={}, use_mse=True):
         super(CNNTDNetwork, self).__init__()
         assert type(cnn_dims) == list
 
@@ -65,7 +65,7 @@ class CNNTDNetwork(nn.Module):
         self.fc2 = nn.Linear(fc_dim, n_actions)
 
         self.optimizer = get_torch_optimizer(self.parameters(), optimizer_type, optimizer_args)
-        self.loss = nn.MSELoss()
+        self.loss = nn.MSELoss() if use_mse else nn.SmoothL1Loss()
         self.device = T.device('cuda:0' if T.cuda.is_available() else 'cpu')
         self.to(self.device)
 
@@ -92,11 +92,11 @@ class CNNTDNetwork(nn.Module):
         self.load_state_dict(T.load(model_file_name))
 
 
-def choose_network(input_dims, n_actions, network_args, optimizer_type, optimizer_args={}):
+def choose_network(input_dims, n_actions, network_args, optimizer_type, optimizer_args={}, use_mse=True):
     if 'cnn_dims' and 'fc_dim' in network_args:
         return CNNTDNetwork(input_dims, n_actions, network_args['cnn_dims'], network_args['fc_dim'],
-                            optimizer_type, optimizer_args)
+                            optimizer_type, optimizer_args, use_mse)
     elif 'fc_dims' in network_args:
-        return FCTDNetwork(input_dims, n_actions, network_args['fc_dims'], optimizer_type, optimizer_args)
+        return FCTDNetwork(input_dims, n_actions, network_args['fc_dims'], optimizer_type, optimizer_args, use_mse)
     else:
         return TypeError('Invalid arguments to choose Network type')

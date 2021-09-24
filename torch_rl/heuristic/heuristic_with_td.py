@@ -13,16 +13,16 @@ class HeuristicWithTD(HeuristicWithML, TDAgent):
     def __init__(self, heuristic_func, use_model_only, algorithm_type, is_double, gamma, action_space, input_dims,
                  mem_size, batch_size, network_args, optimizer_type, policy_type, policy_args={},
                  replace=1000, optimizer_args={}, goal=None, enable_action_blocking=False, min_penalty=0,
-                 use_ml_for_action_blocker=False, action_blocker_memory=None, action_blocker_model_name=None,
-                 add_conservative_loss=False, alpha=0.001, model_name=None, **args):
-        HeuristicWithML.__init__(self, heuristic_func, use_model_only, action_space, enable_action_blocking,
-                                 min_penalty, use_ml_for_action_blocker, action_blocker_memory,
-                                 action_blocker_model_name, **args)
+                 pre_loaded_memory=None, action_blocker_model_name=None,
+                 action_blocker_timesteps=1000000, action_blocker_model_type=None,
+                 add_conservative_loss=False, alpha=0.001, model_name=None, use_mse=True, **args):
+        HeuristicWithML.__init__(self, input_dims, heuristic_func, use_model_only, action_space, enable_action_blocking,
+                                 min_penalty, pre_loaded_memory,
+                                 action_blocker_model_name, action_blocker_timesteps, action_blocker_model_type, **args)
         TDAgent.__init__(self, algorithm_type, is_double, gamma, action_space, input_dims, mem_size, batch_size,
                          network_args,
-                         optimizer_type, policy_type, policy_args, replace, optimizer_args, enable_action_blocking,
-                         min_penalty, use_ml_for_action_blocker, action_blocker_memory, action_blocker_model_name,
-                         goal, False, model_name)
+                         optimizer_type, policy_type, policy_args, replace, optimizer_args, False, 0, False, None, None,
+                         goal, False, model_name, use_mse)
         self.add_conservative_loss = add_conservative_loss
         self.alpha = alpha
 

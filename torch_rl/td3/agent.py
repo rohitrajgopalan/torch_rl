@@ -12,13 +12,15 @@ class TD3Agent:
     def __init__(self, input_dims, action_space, tau, network_args, actor_optimizer_type, critic_optimizer_type,
                  actor_optimizer_args={}, critic_optimizer_args={}, gamma=0.99,
                  max_size=1000000, batch_size=64, policy_update_interval=2, noise_std=0.2,
-                 noise_clip=0.5, goal=None, assign_priority=False, model_name=None):
+                 noise_clip=0.5, goal=None, assign_priority=False, model_name=None, pre_loaded_memory=None,
+                 use_mse=True):
         self.gamma = gamma
         self.tau = tau
         self.batch_size = batch_size
         self.policy_update_interval = policy_update_interval
         self.noise_std = noise_std
         self.noise_clip = noise_clip
+        self.use_mse = use_mse
 
         self.noise = GaussianExploration(action_space)
 
@@ -72,6 +74,8 @@ class TD3Agent:
             self.memory = PriorityReplayBuffer(max_size, input_dims, action_space.shape[0], self.goal)
         else:
             self.memory = ReplayBuffer(max_size, input_dims, action_space.shape[0], self.goal)
+
+        self.learn(pre_loaded_memory)
 
         self.learn_step_cntr = 0
         self.action_space = action_space
@@ -147,24 +151,21 @@ class TD3Agent:
 
         return reward + (self.gamma * next_critic_value * (1 - done)) - old_critic_value
 
-    def sample_memory(self):
-        state, action, reward, state_, done, goals = self.memory.sample_buffer(self.batch_size)
+    def learn(self, pre_loaded_memory=None):
+        if self.memory.mem_cntr < self.batch_size and pre_loaded_memory is None:
+            return
+
+        if pre_loaded_memory is None:
+            state, action, reward, state_, done, goals = self.memory.sample_buffer(self.batch_size)
+        else:
+            pre_loaded_memory.goal = self.goal
+            state, action, reward, state_, done, goals = pre_loaded_memory.sample_buffer(randomized=False)
+
         states = T.tensor(state, dtype=T.float).to(self.actor.device)
         actions = T.tensor(action, dtype=T.float).to(self.actor.device)
         rewards = T.tensor(reward, dtype=T.float).to(self.actor.device)
         states_ = T.tensor(state_, dtype=T.float).to(self.actor.device)
         dones = T.tensor(done).to(self.actor.device)
-
-        if goals is not None:
-            goals = T.tensor(goals).to(self.actor.device)
-
-        return states, actions, rewards, states_, dones, goals
-
-    def learn(self):
-        if self.memory.mem_cntr < self.batch_size:
-            return
-
-        states, actions, rewards, states_, dones, goals = self.sample_memory()
 
         if goals is not None:
             goals = T.tensor(goals).to(self.actor.device)
@@ -197,8 +198,8 @@ class TD3Agent:
 
         self.critic1.optimizer.zero_grad()
         self.critic2.optimizer.zero_grad()
-        critic_loss1 = F.mse_loss(target, critic_value1)
-        critic_loss2 = F.mse_loss(target, critic_value2)
+        critic_loss1 = F.mse_loss(target, critic_value1) if self.use_mse else F.smooth_l1_loss(target, critic_value1)
+        critic_loss2 = F.mse_loss(target, critic_value2) if self.use_mse else F.smooth_l1_loss(target, critic_value2)
         critic_loss = critic_loss1 + critic_loss2
         critic_loss.backward()
 

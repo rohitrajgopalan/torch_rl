@@ -10,10 +10,12 @@ from torch_rl.replay.priority_replay import PriorityReplayBuffer
 class DDPGAgent:
     def __init__(self, input_dims, action_space, tau, network_args, actor_optimizer_type, critic_optimizer_type,
                  actor_optimizer_args={}, critic_optimizer_args={}, gamma=0.99,
-                 max_size=1000000, batch_size=64, goal=None, assign_priority=False, model_name=None):
+                 max_size=1000000, batch_size=64, goal=None, assign_priority=False, model_name=None,
+                 pre_loaded_memory=None, use_mse=True):
         self.gamma = gamma
         self.tau = tau
         self.batch_size = batch_size
+        self.use_mse = use_mse
 
         self.noise = OUNoise(action_space, mu=np.zeros(action_space.shape))
 
@@ -55,6 +57,8 @@ class DDPGAgent:
             self.memory = PriorityReplayBuffer(max_size, input_dims, action_space.shape[0], self.goal)
         else:
             self.memory = ReplayBuffer(max_size, input_dims, action_space.shape[0], self.goal)
+
+        self.learn(pre_loaded_memory)
 
         self.action_space = action_space
 
@@ -117,24 +121,21 @@ class DDPGAgent:
 
         return reward + (self.gamma * next_critic_value * (1 - done)) - old_critic_value
 
-    def sample_memory(self):
-        state, action, reward, state_, done, goals = self.memory.sample_buffer(self.batch_size)
+    def learn(self, pre_loaded_memory=None):
+        if self.memory.mem_cntr < self.batch_size and pre_loaded_memory is None:
+            return
+
+        if pre_loaded_memory is None:
+            state, action, reward, state_, done, goals = self.memory.sample_buffer(self.batch_size)
+        else:
+            pre_loaded_memory.goal = self.goal
+            state, action, reward, state_, done, goals = pre_loaded_memory.sample_buffer(randomized=False)
+
         states = T.tensor(state, dtype=T.float).to(self.critic.device)
         actions = T.tensor(action, dtype=T.float).to(self.critic.device)
         rewards = T.tensor(reward, dtype=T.float).to(self.critic.device)
         states_ = T.tensor(state_, dtype=T.float).to(self.critic.device)
         dones = T.tensor(done).to(self.critic.device)
-
-        if goals is not None:
-            goals = T.tensor(goals).to(self.critic.device)
-
-        return states, actions, rewards, states_, dones, goals
-
-    def learn(self):
-        if self.memory.mem_cntr < self.batch_size:
-            return
-
-        states, actions, rewards, states_, dones, goals = self.sample_memory()
 
         if goals is not None:
             goals = T.tensor(goals).to(self.actor.device)
@@ -156,7 +157,7 @@ class DDPGAgent:
         target = target.view(self.batch_size, 1)
 
         self.critic.optimizer.zero_grad()
-        critic_loss = F.mse_loss(target, critic_value)
+        critic_loss = F.mse_loss(target, critic_value) if self.use_mse else F.smooth_l1_loss(target, critic_value)
         critic_loss.backward()
         self.critic.optimizer.step()
 

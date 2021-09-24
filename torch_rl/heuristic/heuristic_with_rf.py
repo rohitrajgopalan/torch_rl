@@ -1,12 +1,12 @@
 import numpy as np
-from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
+from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 
 from .heuristic_with_ml import HeuristicWithML
 
 import joblib
 
 
-class HeuristicWithDT(HeuristicWithML):
+class HeuristicWithRF(HeuristicWithML):
     def __init__(self, input_dims, heuristic_func, use_model_only, action_space, enable_action_blocking=False, min_penalty=0,
                  action_blocker_memory=None, action_blocker_model_name=None,
                  model_name=None, action_blocker_timesteps=1000000, action_blocker_model_type=None, **args):
@@ -14,7 +14,7 @@ class HeuristicWithDT(HeuristicWithML):
                          action_blocker_memory, action_blocker_model_name,
                          action_blocker_timesteps, action_blocker_model_type, **args)
         if model_name is None:
-            self.model = DecisionTreeRegressor() if self.is_continuous else DecisionTreeClassifier()
+            self.model = RandomForestRegressor() if self.is_continuous else RandomForestClassifier()
         else:
             self.load_model(model_name)
         self.states = []
@@ -40,7 +40,7 @@ class HeuristicWithDT(HeuristicWithML):
         super().optimize(env, learning_type)
 
     def __str__(self):
-        return 'Heuristic driven DT Agent {0}'.format('only using models' if self.use_model_only else 'alternating '
+        return 'Heuristic driven RF Agent {0}'.format('only using models' if self.use_model_only else 'alternating '
                                                                                                       'between '
                                                                                                       'models and '
                                                                                                       'heuristic')

@@ -13,12 +13,13 @@ class HeuristicWithTD3(HeuristicWithML, TD3Agent):
                  actor_optimizer_type,
                  critic_optimizer_type, actor_optimizer_args={}, critic_optimizer_args={}, gamma=0.99,
                  max_size=1000000, batch_size=64, policy_update_interval=2, noise_std=0.2,
-                 noise_clip=0.5, goal=None, model_name=None, **args):
-        HeuristicWithML.__init__(self, heuristic_func, use_model_only, action_space, False, 0, **args)
+                 noise_clip=0.5, goal=None, model_name=None, pre_loaded_memory=None,
+                 use_mse=True, **args):
+        HeuristicWithML.__init__(self, input_dims, heuristic_func, use_model_only, action_space, False, 0, **args)
         TD3Agent.__init__(input_dims, action_space, tau, network_args, actor_optimizer_type, critic_optimizer_type,
                           actor_optimizer_args, critic_optimizer_args, gamma,
                           max_size, batch_size, policy_update_interval, noise_std,
-                          noise_clip, goal, False, model_name)
+                          noise_clip, goal, False, model_name, pre_loaded_memory, use_mse)
 
     def optimize(self, env, learning_type):
         num_updates = int(math.ceil(self.memory.mem_cntr / self.batch_size))
@@ -70,8 +71,8 @@ class HeuristicWithTD3(HeuristicWithML, TD3Agent):
 
             self.critic1.optimizer.zero_grad()
             self.critic2.optimizer.zero_grad()
-            critic_loss1 = F.mse_loss(target, critic_value1)
-            critic_loss2 = F.mse_loss(target, critic_value2)
+            critic_loss1 = F.mse_loss(target, critic_value1) if self.use_mse else F.smooth_l1_loss(target, critic_value1)
+            critic_loss2 = F.mse_loss(target, critic_value2) if self.use_mse else F.smooth_l1_loss(target, critic_value2)
             critic_loss = critic_loss1 + critic_loss2
             critic_loss.backward()
 

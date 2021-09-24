@@ -1,8 +1,9 @@
 import math
-import torch as T
+
 import numpy as np
+import torch as T
+
 from .network import Network
-from ..replay.replay import ReplayBuffer
 
 
 class CEMAgent:
