@@ -8,18 +8,18 @@ from torch_rl.utils.types import LearningType
 
 class HeuristicWithML:
     def __init__(self, input_dims, heuristic_func, use_model_only, action_space, enable_action_blocking=False, min_penalty=0,
-                 action_blocker_memory=None, action_blocker_model_name=None,
+                 preloaded_memory=None, action_blocker_model_name=None,
                  action_blocker_timesteps=1000000, action_blocker_model_type=None, **args):
         self.heuristic_func = heuristic_func
         self.use_model_only = use_model_only
         self.is_continuous = type(action_space) == Box
         if type(action_space) == Discrete and enable_action_blocking:
             self.enable_action_blocking = True
-            if action_blocker_memory is None:
-                action_blocker_memory = ReplayBuffer(input_shape=input_dims, max_size=action_blocker_timesteps)
+            if preloaded_memory is None:
+                preloaded_memory = ReplayBuffer(input_shape=input_dims, max_size=action_blocker_timesteps)
             else:
-                action_blocker_memory.add_more_memory(extra_mem_size=action_blocker_timesteps)
-            self.action_blocker = ActionBlocker(action_space, penalty=min_penalty, memory=action_blocker_memory,
+                preloaded_memory.add_more_memory(extra_mem_size=action_blocker_timesteps)
+            self.action_blocker = ActionBlocker(action_space, penalty=min_penalty, memory=preloaded_memory,
                                                 model_name=action_blocker_model_name,
                                                 model_type=action_blocker_model_type)
         else:
@@ -67,9 +67,7 @@ class HeuristicWithML:
         raise NotImplemented('Not implemented predict_action')
 
     def store_transition(self, state, action, reward, state_, done):
-        if type(self.action_blocker) == ActionBlocker:
-            self.action_blocker.store_transition(state, action, reward, state_, done)
+        self.action_blocker.store_transition(state, action, reward, state_, done)
 
     def optimize(self, env, learning_type):
-        if type(self.action_blocker) == ActionBlocker:
-            self.action_blocker.optimize()
+        self.action_blocker.optimize()

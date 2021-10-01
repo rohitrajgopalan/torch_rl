@@ -21,7 +21,7 @@ class HeuristicWithTD(HeuristicWithML, TDAgent):
                                  action_blocker_model_name, action_blocker_timesteps, action_blocker_model_type, **args)
         TDAgent.__init__(self, algorithm_type, is_double, gamma, action_space, input_dims, mem_size, batch_size,
                          network_args,
-                         optimizer_type, policy_type, policy_args, replace, optimizer_args, False, 0, False, None, None,
+                         optimizer_type, policy_type, policy_args, replace, optimizer_args, False, 0, None, None,
                          goal, False, model_name, use_mse)
         self.add_conservative_loss = add_conservative_loss
         self.alpha = alpha

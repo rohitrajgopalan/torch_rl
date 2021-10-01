@@ -12,7 +12,7 @@ class TDAgent:
     def __init__(self, algorithm_type, is_double, gamma, action_space, input_dims,
                  mem_size, batch_size, network_args, optimizer_type, policy_type, policy_args={},
                  replace=1000, optimizer_args={}, enable_action_blocking=False, min_penalty=0,
-                 pre_loaded_memory=None, action_blocker_model_name=None,
+                 pre_loaded_memory=None, action_blocker_model_name=None, action_blocker_model_type=None,
                  goal=None, assign_priority=False, model_name=None, action_blocker_timesteps=1000000,
                  use_mse=True):
         self.algorithm_type = algorithm_type
@@ -56,7 +56,8 @@ class TDAgent:
             else:
                 pre_loaded_memory.add_more_memory(extra_mem_size=action_blocker_timesteps)
             self.action_blocker = ActionBlocker(action_space, penalty=min_penalty, memory=pre_loaded_memory,
-                                                model_name=action_blocker_model_name)
+                                                model_name=action_blocker_model_name,
+                                                model_type=action_blocker_model_type)
         self.initial_action_blocked = False
         self.initial_action = None
 

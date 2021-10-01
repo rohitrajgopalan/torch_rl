@@ -8,10 +8,10 @@ import joblib
 
 class HeuristicWithRF(HeuristicWithML):
     def __init__(self, input_dims, heuristic_func, use_model_only, action_space, enable_action_blocking=False, min_penalty=0,
-                 action_blocker_memory=None, action_blocker_model_name=None,
+                 preloaded_memory=None, action_blocker_model_name=None,
                  model_name=None, action_blocker_timesteps=1000000, action_blocker_model_type=None, **args):
         super().__init__(input_dims, heuristic_func, use_model_only, action_space, enable_action_blocking, min_penalty,
-                         action_blocker_memory, action_blocker_model_name,
+                         preloaded_memory, action_blocker_model_name,
                          action_blocker_timesteps, action_blocker_model_type, **args)
         if model_name is None:
             self.model = RandomForestRegressor() if self.is_continuous else RandomForestClassifier()
