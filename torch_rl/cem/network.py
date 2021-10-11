@@ -9,21 +9,9 @@ class Network(nn.Module):
         super(Network, self).__init__()
 
         self.input_dim_len = len(input_dims)
-        self.conv_list = []
-        if 'cnn_dims' in network_args:
-            cnn_dims = network_args['cnn_dims']
-            for i, cnn_dim in enumerate(cnn_dims):
-                in_channel = input_dims[0] if i == 0 else cnn_dims[i - 1][0]
-                out_channel = cnn_dim[0]
-                kernel_size = cnn_dim[1]
-                stride = cnn_dim[2]
-                self.conv_list.append(nn.Conv2d(in_channel, out_channel, kernel_size, stride=stride))
-
-                self.total_fc_input_dims = self.calculate_conv_output_dims(input_dims)
-            else:
-                self.total_fc_input_dims = 1
-                for dim in input_dims:
-                    self.total_fc_input_dims *= dim
+        self.total_fc_input_dims = 1
+        for dim in input_dims:
+            self.total_fc_input_dims *= dim
 
         self.h_size = network_args['fc_dim']
         self.a_size = action_dims[0]
@@ -50,32 +38,18 @@ class Network(nn.Module):
         self.fc2.weight.data.copy_(fc2_W.view_as(self.fc2.weight.data))
         self.fc2.bias.data.copy_(fc2_b.view_as(self.fc2.bias.data))
 
-    def calculate_conv_output_dims(self, input_dims):
-        out = T.zeros(1, *input_dims)
-        for conv in self.conv_list:
-            out = conv(out)
-        return int(np.prod(out.size()))
-
     def get_weights_dim(self):
         return (self.s_size + 1) * self.h_size + (self.h_size + 1) * self.a_size
 
     def forward(self, state):
-        if len(self.conv_list) > 0:
-            out = state
-            for conv in self.conv_list:
-                out = F.relu(conv(out))
-            conv3 = out
-            state = conv3.view(conv3.size()[0], -1)
+        if len(state.shape) == self.input_dim_len:
+            state = state.flatten()
             x = F.relu(self.fc1(state))
         else:
-            if len(state.shape) == self.input_dim_len:
-                state = state.flatten()
-                x = F.relu(self.fc1(state))
-            else:
-                states = T.empty((state.shape[0], self.input_dim_len))
-                for i, s in enumerate(state):
-                    states[i] = s.flatten()
-                x = F.relu(self.fc1(states))
+            states = T.empty((state.shape[0], self.input_dim_len))
+            for i, s in enumerate(state):
+                states[i] = s.flatten()
+            x = F.relu(self.fc1(states))
 
         x = F.relu(self.fc1(x))
         x = F.tanh(self.fc2(x))
